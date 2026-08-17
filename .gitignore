@@ -1,1 +1,45 @@
-# Repository-specific ignore rules will be added with implementation scaffolding.
+# OS
+.DS_Store
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.iml
+
+# Gradle and Kotlin Multiplatform
+.gradle/
+build/
+local.properties
+.kotlin/
+
+# Android build output
+*.apk
+*.aab
+captures/
+
+# Xcode and Swift Package Manager
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+*.ipa
+*.dSYM.zip
+
+# Test and coverage output
+*.xcresult
+
+# Signing and provisioning material
+*.jks
+*.keystore
+keystore.properties
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.pem
+*.key
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
