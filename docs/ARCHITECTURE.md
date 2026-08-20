@@ -348,15 +348,15 @@ request pairing challenge
 Representative public calls:
 
 ```text
-POST /v2/devices/pair
-GET  /v2/capabilities
-POST /v2/captures
-POST /v2/github/repositories
-POST /v2/ai-archives/imports, when mobile upload is supported
-GET  /v2/operations/{id}
-GET  /v2/operations/{id}/events
-GET  /v2/library
-GET  /v2/search
+POST /v1/devices/pair
+GET  /v1/capabilities
+POST /v1/captures
+POST /v1/github/repositories
+POST /v1/ai-archives/imports, when mobile upload is supported
+GET  /v1/operations/{id}
+GET  /v1/operations/{id}/events
+GET  /v1/library
+GET  /v1/search
 ```
 
 The client uses generated/strongly typed models from `ratatoskr-contracts` and handles compatible unknown fields/statuses.

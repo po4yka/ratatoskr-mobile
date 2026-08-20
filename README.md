@@ -1,10 +1,21 @@
 # Ratatoskr Mobile
 
-`ratatoskr-mobile` is the Android and iOS client repository for Ratatoskr Next. It provides system Share targets, a durable offline capture queue, operation progress, personal archive browsing, search, and account/device management against the public Ratatoskr Edge API.
+`ratatoskr-mobile` is the Android and iOS client repository for Ratatoskr. It provides system Share targets, a durable offline capture queue, operation progress, personal archive browsing, search, and account/device management against the public Ratatoskr Edge API.
 
 > **Status:** architecture bootstrap. No Android app, iOS app, Share Extension, KMP module, API client, or local database is implemented yet.
 
-## Role in Ratatoskr Next
+> [!IMPORTANT]
+> **Ratatoskr is in development.** No database holds data that has to survive a schema change.
+> While this status holds, these two rules replace what the documents below plan:
+>
+> - the API and the database keep their first version. There is no `v2` and no later major
+>   version.
+> - the database has no migrations. One schema definition exists, and a schema change edits it in
+>   place.
+>
+> Only the repository owner changes this status.
+
+## Role in Ratatoskr
 
 Mobile is both a fast capture surface and a full client. It enables a user to preserve content directly from other apps without copying URLs into a browser or Telegram bot.
 
