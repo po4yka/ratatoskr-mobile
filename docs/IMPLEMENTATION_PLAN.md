@@ -2,7 +2,7 @@
 
 1. Establish Android/iOS projects, KMP boundary ADR, generated contracts, lint/test/build CI.
 2. Implement device pairing with Keystore/Keychain and Platform capability discovery.
-3. Implement shared capture/queue models and local persistence/migrations.
+3. Implement shared capture/queue models and local persistence from one current schema definition.
 4. Build Android Share Target, staging, offline submission, and operation status.
 5. Build iOS Share Extension/App Group staging, offline submission, and operation status.
 6. Add notes/collections/tags and article/social routing.

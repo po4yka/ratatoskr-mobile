@@ -339,7 +339,10 @@ Planned coverage:
 
 ## Workspace integration
 
-`ratatoskr-workspace` pins Mobile with compatible Platform, Contracts, Extractor, GitHub, social, AI-archive, and Knowledge commits. Mobile remains independently buildable; system tests use generated API contracts and an isolated workspace deployment.
+The planned workspace harness will pin Mobile with compatible Platform, Contracts, Extractor,
+GitHub, social, AI-archive, and Knowledge commits. The pin and integration profile do not exist yet.
+Mobile will remain independently buildable; planned system tests will use generated API contracts
+and an isolated workspace deployment.
 
 ## Project status
 

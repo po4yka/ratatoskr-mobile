@@ -1,6 +1,6 @@
 # Mobile ADRs
 
-Use `NNNN-short-title.md` with context, options, decision, consequences, Android/iOS lifecycle, security/privacy, compatibility/migration, validation, and follow-up.
+Use `NNNN-short-title.md` with context, options, decision, consequences, Android/iOS lifecycle, security/privacy, compatibility/schema impact, validation, and follow-up.
 
 Initial backlog:
 

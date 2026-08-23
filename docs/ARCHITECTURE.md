@@ -481,7 +481,9 @@ Notification content is privacy-sensitive and configurable. Lock-screen previews
 
 ## 20. Local persistence
 
-A local database stores queue and cache state. Schema migrations are tested on both platforms.
+A local database stores queue and cache state. While Ratatoskr remains in development, it has one
+current schema definition that is created fresh and tested on both platforms; schema migrations do
+not exist.
 
 Transactions group:
 
@@ -590,7 +592,7 @@ operation_age
 completed/partial/failed results
 auth_required events
 staged_file_cleanup_failures
-cache_migration_failures
+cache_schema_failures
 background_job_delay
 ```
 
@@ -632,7 +634,7 @@ No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels
 - offline capture and retry;
 - resumable file upload;
 - operation SSE/polling;
-- local database migrations;
+- fresh creation and validation of the current local database schema;
 - cache authorization/logout purge.
 
 ### Workspace end-to-end

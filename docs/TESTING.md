@@ -2,7 +2,7 @@
 
 Required suites:
 
-- Shared pure-model/queue/idempotency/retry/migration tests.
+- Shared pure-model/queue/idempotency/retry and current-schema creation tests.
 - Android Share Target for URL/text/single/multiple content URI, permission expiry, process death, WorkManager, Keystore, app links, notifications.
 - iOS Share Extension item-provider/file/App Group handoff, extension timeout/memory, app launch, background URLSession, Keychain, universal links.
 - Hostile/oversized/unsupported files, low disk, hash mismatch, duplicate shares, offline/auth revoke/server retry/partial results.
