@@ -43,3 +43,4 @@ keystore.properties
 .env
 .env.*
 !.env.example
+.omo/
