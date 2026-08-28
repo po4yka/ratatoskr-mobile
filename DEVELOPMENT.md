@@ -4,8 +4,9 @@
 > Last reviewed: 2026-08-28
 
 The repository contains buildable Android and iOS application shells around one shared Compose
-Multiplatform root. It does not yet contain capture features, share extensions, durable queue
-behavior, device authentication, or feature UI.
+Multiplatform root. Device pairing, rotating device sessions, native secure credential storage,
+and session-scoped Platform capability discovery are implemented. It does not yet contain capture
+features, share extensions, or a durable queue.
 
 ## Toolchain
 
@@ -35,9 +36,12 @@ build-gate -- ./gradlew --no-daemon ktlintCheck
 build-gate -- ./tooling/contracts/check.sh
 build-gate -- ./tooling/tests/contract_drift_test.sh
 build-gate -- ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
+build-gate -- ./gradlew --no-daemon :shared:connectedDebugAndroidTest
 
-swift format lint --recursive --strict iosApp/Ratatoskr/App
+swift format lint --recursive --strict iosApp
 build-gate -- ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
+simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"
+build-gate -- xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" test
 build-gate -- xcodebuild -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
 openspec validate --all --strict
@@ -45,8 +49,16 @@ openspec validate --archived
 ```
 
 The Android app is a thin native Activity. The iOS app is a thin SwiftUI/UIKit shell whose Xcode
-build phase embeds the shared Objective-C-compatible framework. Both host `RatatoskrApp`; there is
-no feature UI in this bootstrap.
+build phase embeds the shared Objective-C-compatible framework. Both host the shared pairing and
+current-capability surface. Native KMP source sets supply the Keystore/Keychain adapters and Ktor
+engines; the common coordinator owns pairing, serialized rotation/recovery, revocation, and UDF
+state.
+
+Android instrumentation runs the real AES-GCM/Android Keystore round trip. The app-hosted iOS
+XCTest target runs the real device-only, non-synchronizing Keychain round trip. The unhosted
+Kotlin/Native Simulator test is intentionally skipped because Security returns
+`errSecNotAvailable` without an application host; it remains compile coverage, while the hosted
+XCTest is the runtime gate.
 
 ## Generated Platform contracts
 

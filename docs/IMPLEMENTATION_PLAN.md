@@ -5,7 +5,11 @@
    shared tests, Android debug assembly, unsigned iOS Simulator build, contract drift/mutation
    checks, and the hosted CI definition; it is not feature, signing, device, provider, or live
    Platform proof.
-2. Implement device pairing with Keystore/Keychain and Platform capability discovery.
+2. **Complete (2026-08-28):** implement device pairing with Keystore/Keychain and Platform
+   capability discovery. Evidence covers the contract handshake matrix, serialized refresh and
+   bounded device-root recovery, paired-elsewhere revocation, current-session fail-closed
+   capabilities, Android Emulator Keystore, app-hosted iOS Simulator Keychain, and CI definitions;
+   it is not live Platform, physical-device, signing, or provider evidence.
 3. Implement shared capture/queue models and local persistence from one current schema definition.
 4. Build Android Share Target, staging, offline submission, and operation status.
 5. Build iOS Share Extension/App Group staging, offline submission, and operation status.

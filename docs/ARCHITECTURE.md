@@ -327,23 +327,29 @@ Rules:
 
 ### 11.1. Pairing
 
-The app pairs with Platform through a browser/session approval or authenticated in-app flow.
-
-```text
-request pairing challenge
--> user approves device
--> exchange one-time token
--> store device secret in Keystore/Keychain
--> obtain short-lived access tokens
-```
+The shared pairing surface accepts a code that the user approved through an existing primary
+Platform session. It posts generated `PairDevice(kind = "mobile")` data to the explicitly entered
+canonical HTTPS Platform origin, disables redirects, stores the complete returned credential set,
+and only then exposes paired state. An uncertain pairing response requires a fresh code because the
+presented code may already be spent.
 
 ### 11.2. Credential rules
 
-- secrets remain in Android Keystore/iOS Keychain;
+- common code reads, atomically replaces, or clears one opaque origin-bound credential record
+  through `SecureCredentialStorage`;
+- Android stores only AES-GCM IV/ciphertext in private, backup-disabled preferences while the
+  non-exportable key remains in Android Keystore;
+- iOS stores the record as an `AfterFirstUnlockThisDeviceOnly`, non-synchronizing generic-password
+  Keychain item;
 - no provider credentials are stored;
 - tokens are bound to server origin and device ID;
-- rotation and revocation are supported;
-- logout/revoke clears local secrets and pauses queue;
+- a mutex serializes refresh/recovery and coalesces callers that observed one refresh link;
+- an unusable-refresh marker is persisted before exchange, so a restarted process goes directly to
+  device-root recovery instead of replaying the link;
+- an uncertain or refused refresh is never replayed and receives at most one device-root recovery;
+- refusal of refresh and device-root recovery clears credentials and capabilities and exposes
+  re-pairing required;
+- local sign-out clears only local authorization and does not claim server revocation;
 - debug logs, backups, screenshots, and analytics exclude tokens;
 - server-origin change requires explicit confirmation and re-pairing.
 
@@ -367,7 +373,7 @@ The client uses generated/strongly typed models from `ratatoskr-contracts` and h
 
 ## 13. Capabilities
 
-A cached capabilities snapshot drives feature visibility:
+An in-memory current-session capabilities snapshot drives feature visibility:
 
 ```text
 content.submit
@@ -382,7 +388,11 @@ archive.claude
 search
 ```
 
-Missing or stale capability state results in conservative UI. The client does not infer a backend service from an endpoint error alone.
+The coordinator fetches capabilities after restoration, pairing, and device-root recovery. Unknown
+names remain visible as data but cannot enable local behavior because feature checks accept only the
+closed `MobileCapability` set. Missing or stale capability state returns false for every feature;
+stale data may remain display-only context. A `401` receives one serialized session refresh/recovery
+and one capability retry. The client does not infer a backend service from an endpoint error alone.
 
 ## 14. External-write confirmation
 

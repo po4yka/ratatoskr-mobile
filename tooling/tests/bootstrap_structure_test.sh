@@ -30,7 +30,22 @@ android_shell_hosts_shared_compose() {
   assert_file "$test_name" "shared/src/commonMain/kotlin/com/ratatoskr/mobile/App.kt"
   assert_file "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt"
   assert_contains "$test_name" "settings.gradle.kts" 'include(":shared", ":androidApp")'
-  assert_contains "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt" "RatatoskrApp()"
+  assert_contains "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt" "RatatoskrApp(sessionManager)"
+
+  printf 'ok - %s\n' "$test_name"
+}
+
+device_identity_uses_native_secure_storage() {
+  local test_name="device_identity_uses_native_secure_storage"
+
+  assert_file "$test_name" "shared/src/commonMain/kotlin/com/ratatoskr/mobile/identity/DeviceSessionManager.kt"
+  assert_file "$test_name" "shared/src/commonTest/kotlin/com/ratatoskr/mobile/identity/DeviceSessionManagerTest.kt"
+  assert_file "$test_name" "shared/src/androidMain/kotlin/com/ratatoskr/mobile/identity/AndroidIdentityFactory.kt"
+  assert_file "$test_name" "shared/src/iosMain/kotlin/com/ratatoskr/mobile/identity/IosIdentityFactory.kt"
+  assert_file "$test_name" "shared/src/androidInstrumentedTest/kotlin/com/ratatoskr/mobile/identity/AndroidKeystoreCredentialStorageTest.kt"
+  assert_file "$test_name" "iosApp/RatatoskrTests/IosKeychainCredentialStorageTests.swift"
+  assert_contains "$test_name" "shared/src/androidMain/kotlin/com/ratatoskr/mobile/identity/AndroidIdentityFactory.kt" "AndroidKeystoreCredentialStorage"
+  assert_contains "$test_name" "shared/src/iosMain/kotlin/com/ratatoskr/mobile/identity/IosIdentityFactory.kt" "IosKeychainCredentialStorage"
 
   printf 'ok - %s\n' "$test_name"
 }
@@ -52,3 +67,4 @@ ios_shell_hosts_shared_compose() {
 
 android_shell_hosts_shared_compose
 ios_shell_hosts_shared_compose
+device_identity_uses_native_secure_storage

@@ -70,6 +70,15 @@ jobs:
       - name: Shared Android tests and Android build
         run: ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
 
+      - name: Android Keystore instrumentation
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: ./gradlew --no-daemon :shared:connectedDebugAndroidTest
+
       - name: Strict OpenSpec validation
         run: |
           openspec validate --all --strict
@@ -104,10 +113,15 @@ jobs:
           key: apple-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json') }}
 
       - name: Swift format and lint
-        run: swift format lint --recursive --strict iosApp/Ratatoskr/App
+        run: swift format lint --recursive --strict iosApp
 
       - name: Shared iOS tests and framework
         run: ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
+
+      - name: App-hosted iOS Keychain test
+        run: |
+          simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"
+          xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" test
 
       - name: Unsigned iOS Simulator app
         run: xcodebuild -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

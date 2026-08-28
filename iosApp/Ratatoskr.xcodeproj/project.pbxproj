@@ -9,16 +9,53 @@
 /* Begin PBXBuildFile section */
 		100000000000000000000001 /* RatatoskrApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* RatatoskrApp.swift */; };
 		100000000000000000000002 /* ComposeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* ComposeRootView.swift */; };
+		100000000000000000000003 /* IosKeychainCredentialStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* IosKeychainCredentialStorageTests.swift */; };
+		100000000000000000000004 /* RatatoskrTestHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* RatatoskrTestHostApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		100000000000000000000010 /* Ratatoskr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ratatoskr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000011 /* RatatoskrApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatatoskrApp.swift; sourceTree = "<group>"; };
 		100000000000000000000012 /* ComposeRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeRootView.swift; sourceTree = "<group>"; };
+		100000000000000000000013 /* IosKeychainCredentialStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosKeychainCredentialStorageTests.swift; sourceTree = "<group>"; };
+		100000000000000000000014 /* RatatoskrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RatatoskrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000015 /* RatatoskrTestHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatatoskrTestHostApp.swift; sourceTree = "<group>"; };
+		100000000000000000000016 /* RatatoskrTestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RatatoskrTestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		100000000000000000000070 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000041 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000040;
+			remoteInfo = Ratatoskr;
+		};
+		100000000000000000000072 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000041 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000043;
+			remoteInfo = RatatoskrTestHost;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		100000000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000024 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000028 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -32,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000031 /* Ratatoskr */,
+				100000000000000000000034 /* RatatoskrTests */,
 				100000000000000000000032 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +86,8 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000010 /* Ratatoskr.app */,
+				100000000000000000000014 /* RatatoskrTests.xctest */,
+				100000000000000000000016 /* RatatoskrTestHost.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -59,6 +99,15 @@
 				100000000000000000000012 /* ComposeRootView.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		100000000000000000000034 /* RatatoskrTests */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000013 /* IosKeychainCredentialStorageTests.swift */,
+				100000000000000000000015 /* RatatoskrTestHostApp.swift */,
+			);
+			path = RatatoskrTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -82,6 +131,42 @@
 			productReference = 100000000000000000000010 /* Ratatoskr.app */;
 			productType = "com.apple.product-type.application";
 		};
+		100000000000000000000042 /* RatatoskrTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000052 /* Build configuration list for PBXNativeTarget "RatatoskrTests" */;
+			buildPhases = (
+				100000000000000000000025 /* Sources */,
+				100000000000000000000024 /* Frameworks */,
+				100000000000000000000026 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				100000000000000000000071 /* PBXTargetDependency */,
+				100000000000000000000073 /* PBXTargetDependency */,
+			);
+			name = RatatoskrTests;
+			productName = RatatoskrTests;
+			productReference = 100000000000000000000014 /* RatatoskrTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		100000000000000000000043 /* RatatoskrTestHost */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000053 /* Build configuration list for PBXNativeTarget "RatatoskrTestHost" */;
+			buildPhases = (
+				100000000000000000000027 /* Sources */,
+				100000000000000000000028 /* Frameworks */,
+				100000000000000000000029 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RatatoskrTestHost;
+			productName = RatatoskrTestHost;
+			productReference = 100000000000000000000016 /* RatatoskrTestHost.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -93,6 +178,13 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					100000000000000000000040 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					100000000000000000000042 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 100000000000000000000043;
+					};
+					100000000000000000000043 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -111,12 +203,28 @@
 			projectRoot = "";
 			targets = (
 				100000000000000000000040 /* Ratatoskr */,
+				100000000000000000000042 /* RatatoskrTests */,
+				100000000000000000000043 /* RatatoskrTestHost */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		100000000000000000000022 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000026 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000029 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -157,7 +265,36 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		100000000000000000000025 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000003 /* IosKeychainCredentialStorageTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000027 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000004 /* RatatoskrTestHostApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		100000000000000000000071 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000040 /* Ratatoskr */;
+			targetProxy = 100000000000000000000070 /* PBXContainerItemProxy */;
+		};
+		100000000000000000000073 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000043 /* RatatoskrTestHost */;
+			targetProxy = 100000000000000000000072 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		100000000000000000000060 /* Debug */ = {
@@ -235,6 +372,80 @@
 			};
 			name = Release;
 		};
+		100000000000000000000064 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RatatoskrTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RatatoskrTestHost";
+			};
+			name = Debug;
+		};
+		100000000000000000000065 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RatatoskrTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RatatoskrTestHost";
+			};
+			name = Release;
+		};
+		100000000000000000000066 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGN_ENTITLEMENTS = RatatoskrTests/RatatoskrTestHost.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.testhost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = iphonesimulator;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		100000000000000000000067 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGN_ENTITLEMENTS = RatatoskrTests/RatatoskrTestHost.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.testhost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = iphonesimulator;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -252,6 +463,24 @@
 			buildConfigurations = (
 				100000000000000000000060 /* Debug */,
 				100000000000000000000061 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000052 /* Build configuration list for PBXNativeTarget "RatatoskrTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000064 /* Debug */,
+				100000000000000000000065 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000053 /* Build configuration list for PBXNativeTarget "RatatoskrTestHost" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000066 /* Debug */,
+				100000000000000000000067 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

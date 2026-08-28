@@ -2,10 +2,11 @@
 
 `ratatoskr-mobile` is the Android and iOS client repository for Ratatoskr. It provides system Share targets, a durable offline capture queue, operation progress, personal archive browsing, search, and account/device management against the public Ratatoskr Edge API.
 
-> **Status:** architecture bootstrap. Buildable Android and iOS application shells host one shared
-> Compose Multiplatform root, and generated public Platform contract models are wired into the
-> shared module. Share targets/extensions, capture behavior, queue persistence, authentication,
-> transport calls, local database behavior, and feature UI are not implemented yet.
+> **Status:** architecture bootstrap. Buildable Android and iOS application shells host a shared
+> Compose Multiplatform pairing surface. Generated public Platform types back the implemented
+> device-pairing, rotating-session, revocation, and capability-discovery client. Share
+> targets/extensions, capture behavior, queue persistence, and local database behavior are not
+> implemented yet.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -227,16 +228,17 @@ Search and result access are always scoped by the authenticated user and the pub
 
 ## Authentication and device identity
 
-The app registers as a Ratatoskr device. Planned properties:
+The app registers as a Ratatoskr device through Platform identity. Implemented properties:
 
-- secure initial pairing or account login;
+- a user-approved one-time pairing code submitted only to a canonical HTTPS Platform origin;
 - short-lived access tokens;
-- refresh-token family with rotation;
-- Keychain/Keystore-backed secret storage;
-- device name and last-seen state;
-- explicit revoke from another client;
-- certificate/TLS visibility for self-hosted endpoints;
-- optional biometric gate for local archive access.
+- serialized single-use refresh rotation and one bounded device-root recovery;
+- Android Keystore-backed encrypted storage and device-only, non-synchronizing iOS Keychain
+  storage;
+- graceful local credential/capability clearing when another client revokes the device;
+- session-scoped, fail-closed capability discovery exposed to shared application state.
+
+Device-list management, certificate UI, and an optional biometric local gate remain future work.
 
 Provider OAuth flows may be initiated in a system browser, but resulting provider tokens remain in the provider-owning server service.
 
@@ -299,8 +301,12 @@ Unsupported features are hidden or shown as unavailable with an explanation rath
 
 ## Testing strategy
 
-Bootstrap coverage currently includes:
+Current coverage includes:
 
+- pairing transport outcome and HTTPS-origin tests;
+- atomic refresh, concurrent caller coalescing, device-root recovery, revocation, and session-scoped
+  capability tests on Android/JVM and iOS Simulator targets;
+- Android Emulator Keystore and app-hosted iOS Simulator Keychain round trips;
 - shared generated-contract round trips on Android/JVM and iOS Simulator targets;
 - deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
   generated output;
@@ -311,7 +317,6 @@ Bootstrap coverage currently includes:
 
 Later feature coverage will add:
 
-- shared domain and API-client unit tests;
 - queue state-machine and idempotency tests;
 - Android Compose/UI and Share Target tests;
 - iOS SwiftUI and Share Extension tests;
@@ -354,7 +359,9 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan item 1 is implemented at repository level: Android/iOS shells, the shared/native ADR, pinned
-generated Platform models, and lint/test/build CI exist. This is build and simulator evidence only;
-there is no feature UI, Share Target, Share Extension, durable queue, device authentication,
-real-device run, signing/provisioning, provider integration, or live Platform request evidence.
+Plan items 1 and 2 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+pinned generated Platform models, device pairing/session behavior, native secure storage,
+capability discovery, and lint/test/build CI exist. Evidence covers deterministic transport tests,
+Android Emulator Keystore, app-hosted iOS Simulator Keychain, shared tests, and application builds;
+it does not prove live Platform pairing, a physical-device run, signing/provisioning, provider
+integration, share intake, or durable queue behavior.

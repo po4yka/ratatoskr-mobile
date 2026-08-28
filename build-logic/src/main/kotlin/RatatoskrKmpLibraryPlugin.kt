@@ -26,6 +26,7 @@ class RatatoskrKmpLibraryPlugin : Plugin<Project> {
             namespace = "com.ratatoskr.mobile.shared"
             compileSdk = 36
             defaultConfig.minSdk = 26
+            defaultConfig.testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_17
                 targetCompatibility = JavaVersion.VERSION_17

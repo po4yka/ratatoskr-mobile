@@ -12,6 +12,26 @@ Required suites:
 
 Use synthetic files/local servers and platform emulators/simulators plus selected real-device lifecycle tests. No personal provider data in fixtures.
 
+## Device identity gate
+
+The current identity suite covers the Platform pairing outcome matrix, canonical HTTPS origins,
+atomic refresh rotation, concurrent caller coalescing, one device-root recovery after uncertain or
+refused refresh, persisted consumed-link recovery after process restart, revocation, and fail-closed
+session-scoped capabilities in common tests.
+
+Native secret-storage runtime evidence is intentionally app-hosted:
+
+- `:shared:connectedDebugAndroidTest` exercises ciphertext-only preferences and the real Android
+  Keystore on an emulator;
+- the `RatatoskrTests` Xcode target exercises a device-only, non-synchronizing Keychain item on an
+  iOS Simulator;
+- the unhosted Kotlin/Native Simulator Keychain test is skipped because Security returns
+  `errSecNotAvailable` without an application host. It is still compiled by the KMP test target;
+  the hosted XCTest is the runtime assertion.
+
+These tests use synthetic credentials and a mocked Platform transport. They do not prove a live
+Platform deployment or physical-device behavior.
+
 ## Test-first
 
 A change is planned before it is built, and the plan is a task list in which behaviour arrives in
