@@ -33,7 +33,7 @@ jobs:
           node-version: "22"
 
       - name: Cache Gradle dependencies from pinned inputs
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: |
             ~/.gradle/caches
@@ -41,7 +41,7 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json') }}
 
       - name: Install Android SDK platform
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install pinned OpenSpec
         run: npm install --global @fission-ai/openspec@1.10.0
@@ -85,7 +85,7 @@ jobs:
           java-version: "17"
 
       - name: Cache Gradle and Kotlin/Native dependencies from pinned inputs
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: |
             ~/.gradle/caches
