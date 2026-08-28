@@ -47,7 +47,10 @@ jobs:
             "build-tools;36.0.0"
 
       - name: Install pinned OpenSpec
-        run: npm install --global @fission-ai/openspec@1.10.0
+        # This repository has no Node application, so adding a package manifest and lockfile solely
+        # for one CLI would make the fleet gate require unrelated JavaScript lint configuration.
+        # The executable input remains immutable through the exact package-version pin.
+        run: npm install --global @fission-ai/openspec@1.10.0 # zizmor: ignore[adhoc-packages]
 
       - name: Repository bootstrap tests
         run: |
