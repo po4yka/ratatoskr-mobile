@@ -79,6 +79,10 @@ jobs:
     name: iOS shared tests and shell build
     runs-on: macos-15
     timeout-minutes: 45
+    env:
+      # macos-15 defaults to Xcode 16.4, whose iOS SDK cannot link the UIKit symbols used by
+      # Compose 1.11.1. Keep the toolchain explicit while retaining the iOS 18.5 deployment floor.
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

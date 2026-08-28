@@ -11,8 +11,9 @@ behavior, device authentication, or feature UI.
 
 - JDK 17 and the committed Gradle wrapper;
 - Android SDK platform 36; the shell supports Android 8.0/API 26 and newer;
-- Xcode with an arm64 iOS Simulator SDK and the bundled `swift format` command; the Compose 1.11.1
-  shell supports iOS 18.5 and newer;
+- Xcode 26 or newer with an arm64 iOS Simulator SDK and the bundled `swift format` command; Compose
+  1.11.1 requires the Xcode 26 SDK to link its UIKit surface, while the shell supports iOS 18.5 and
+  newer;
 - OpenSpec 1.10.0 for proposal/spec validation.
 
 Kotlin/Compose and library versions are pinned in `gradle/libs.versions.toml`. Gradle is capped at
