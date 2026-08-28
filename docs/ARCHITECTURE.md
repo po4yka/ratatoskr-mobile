@@ -79,8 +79,10 @@ The exact Gradle/Xcode layout may evolve. Shared business rules remain separate 
 
 ### 4.1. Shared KMP responsibilities
 
-Appropriate shared modules include:
+ADR-0001 selects shared Compose Multiplatform product presentation inside thin native application
+shells. Shared modules include:
 
+- Compose presentation, Navigation 3 routes/state, AndroidX ViewModel UDF state, and one-shot effects;
 - capture draft and queue domain models;
 - source/platform classification;
 - payload validation and limits;
@@ -96,7 +98,7 @@ Appropriate shared modules include:
 
 Remain native:
 
-- SwiftUI and Jetpack Compose UI;
+- Android/iOS application lifecycle and the thin Activity/SwiftUI/UIKit host shells;
 - Android `ACTION_SEND`/`ACTION_SEND_MULTIPLE` handling;
 - iOS Share Extension lifecycle;
 - Keychain and Android Keystore integration;
@@ -107,7 +109,9 @@ Remain native:
 - accessibility and adaptive layouts;
 - OS-specific media/file staging.
 
-Shared code must not hide platform lifecycle or security differences behind an overly broad abstraction.
+Shared Compose content does not move share extensions, file authority, secure storage, background
+scheduling, notifications, or platform accessibility integration into KMP. Shared code must not hide
+platform lifecycle or security differences behind an overly broad abstraction.
 
 ## 5. Application layers
 

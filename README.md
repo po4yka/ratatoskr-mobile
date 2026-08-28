@@ -2,7 +2,13 @@
 
 `ratatoskr-mobile` is the Android and iOS client repository for Ratatoskr. It provides system Share targets, a durable offline capture queue, operation progress, personal archive browsing, search, and account/device management against the public Ratatoskr Edge API.
 
-> **Status:** architecture bootstrap. No Android app, iOS app, Share Extension, KMP module, API client, or local database is implemented yet.
+> **Status:** architecture bootstrap. Buildable Android and iOS application shells host one shared
+> Compose Multiplatform root, and generated public Platform contract models are wired into the
+> shared module. Share targets/extensions, capture behavior, queue persistence, authentication,
+> transport calls, local database behavior, and feature UI are not implemented yet.
+
+The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
+prebuilt Compose 1.11.1 runtime linked by the shared framework.
 
 > [!IMPORTANT]
 > **Ratatoskr is in development.** No database holds data that has to survive a schema change.
@@ -34,32 +40,24 @@ Primary use cases:
 
 The application communicates only with `ratatoskr-platform`. It never connects directly to PostgreSQL, NATS, BlobStore, or internal service endpoints.
 
-## Proposed repository organization
+## Repository organization
 
-One repository keeps Android, iOS, and shared client contracts aligned:
+The bootstrap keeps Android, iOS, and shared client contracts aligned:
 
 ```text
 ratatoskr-mobile/
-├── shared/
-│   ├── domain/
-│   ├── api-client/
-│   ├── capture-queue/
-│   ├── authentication/
-│   └── test-fixtures/
-├── androidApp/
-│   ├── app/
-│   ├── share-target/
-│   └── baseline-profile/
-├── iosApp/
-│   ├── App/
-│   ├── ShareExtension/
-│   └── Widgets/
-├── design/
-├── integration-tests/
+├── androidApp/          # thin Android application shell
+├── iosApp/              # thin SwiftUI/UIKit shell and Xcode project
+├── shared/              # shared Compose root and generated Kotlin models
+├── build-logic/         # Gradle convention plugins
+├── contracts/           # pinned Platform OpenAPI and generator lock
+├── gradle/              # version catalog and wrapper
 └── tooling/
 ```
 
-A Kotlin Multiplatform shared core with native Android and SwiftUI presentation is the likely starting point, but the exact split remains an ADR. Platform-native Share Extension behavior and lifecycle handling must not be forced through an abstraction that reduces reliability.
+ADR-0001 chooses shared Compose presentation, public API models/client adapters, and capture-queue
+rules inside KMP. Thin native shells retain application/share lifecycle, secure storage, background
+scheduling, file access, notifications, permissions, and platform accessibility integration.
 
 ## Capture contract
 
@@ -301,7 +299,17 @@ Unsupported features are hidden or shown as unavailable with an explanation rath
 
 ## Testing strategy
 
-Planned coverage:
+Bootstrap coverage currently includes:
+
+- shared generated-contract round trips on Android/JVM and iOS Simulator targets;
+- deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
+  generated output;
+- shell/ADR/CI parity tests;
+- Kotlin and Swift formatting/lint;
+- Android debug assembly, shared iOS framework linking, and unsigned iOS Simulator application
+  builds.
+
+Later feature coverage will add:
 
 - shared domain and API-client unit tests;
 - queue state-machine and idempotency tests;
@@ -346,4 +354,7 @@ and an isolated workspace deployment.
 
 ## Project status
 
-This README defines the intended Android/iOS client and capture architecture. No application, shared module, Share Target, Share Extension, queue, or API client exists yet.
+Plan item 1 is implemented at repository level: Android/iOS shells, the shared/native ADR, pinned
+generated Platform models, and lint/test/build CI exist. This is build and simulator evidence only;
+there is no feature UI, Share Target, Share Extension, durable queue, device authentication,
+real-device run, signing/provisioning, provider integration, or live Platform request evidence.

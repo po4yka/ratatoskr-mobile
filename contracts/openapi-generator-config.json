@@ -1,0 +1,15 @@
+{
+  "dateLibrary": "kotlinx-datetime",
+  "enumPropertyNaming": "UPPERCASE",
+  "hideGenerationTimestamp": true,
+  "importMappings": {
+    "JsonElement": "kotlinx.serialization.json.JsonElement"
+  },
+  "library": "multiplatform",
+  "modelPackage": "com.ratatoskr.mobile.api.generated.model",
+  "packageName": "com.ratatoskr.mobile.api.generated",
+  "sourceFolder": "src/commonMain/kotlin",
+  "typeMappings": {
+    "AnyType": "JsonElement"
+  }
+}

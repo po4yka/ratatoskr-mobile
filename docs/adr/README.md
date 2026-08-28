@@ -2,9 +2,12 @@
 
 Use `NNNN-short-title.md` with context, options, decision, consequences, Android/iOS lifecycle, security/privacy, compatibility/schema impact, validation, and follow-up.
 
+Accepted:
+
+- ADR-0001: [Kotlin Multiplatform ownership boundary](0001-kmp-boundary.md).
+
 Initial backlog:
 
-- ADR-0001: KMP versus native ownership boundaries.
 - ADR-0002: Android Share Target intake and staged files.
 - ADR-0003: iOS Share Extension/App Group handoff.
 - ADR-0004: Durable offline queue and idempotency.

@@ -1,0 +1,103 @@
+name: mobile-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  android:
+    name: Android, shared contracts, and specs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Cache Gradle dependencies from pinned inputs
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json') }}
+
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install pinned OpenSpec
+        run: npm install --global @fission-ai/openspec@1.10.0
+
+      - name: Repository bootstrap tests
+        run: |
+          ./tooling/tests/bootstrap_structure_test.sh
+          ./tooling/tests/architecture_boundary_test.sh
+          ./tooling/tests/gate_parity_test.sh
+
+      - name: Kotlin lint
+        run: ./gradlew --no-daemon ktlintCheck
+
+      - name: Generated contract drift
+        run: ./tooling/contracts/check.sh
+
+      - name: Contract mutation and generated-tree tests
+        run: ./tooling/tests/contract_drift_test.sh
+
+      - name: Shared Android tests and Android build
+        run: ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
+
+      - name: Strict OpenSpec validation
+        run: |
+          openspec validate --all --strict
+          openspec validate --archived
+
+  ios:
+    name: iOS shared tests and shell build
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle and Kotlin/Native dependencies from pinned inputs
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: apple-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json') }}
+
+      - name: Swift format and lint
+        run: swift format lint --recursive --strict iosApp/Ratatoskr/App
+
+      - name: Shared iOS tests and framework
+        run: ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Unsigned iOS Simulator app
+        run: xcodebuild -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

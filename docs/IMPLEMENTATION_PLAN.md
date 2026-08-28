@@ -1,6 +1,10 @@
 # Mobile implementation plan
 
-1. Establish Android/iOS projects, KMP boundary ADR, generated contracts, lint/test/build CI.
+1. **Complete (2026-08-28):** establish Android/iOS projects, KMP boundary ADR, generated contracts,
+   and lint/test/build CI. Evidence is limited to repository tests, Android/JVM and iOS Simulator
+   shared tests, Android debug assembly, unsigned iOS Simulator build, contract drift/mutation
+   checks, and the hosted CI definition; it is not feature, signing, device, provider, or live
+   Platform proof.
 2. Implement device pairing with Keystore/Keychain and Platform capability discovery.
 3. Implement shared capture/queue models and local persistence from one current schema definition.
 4. Build Android Share Target, staging, offline submission, and operation status.

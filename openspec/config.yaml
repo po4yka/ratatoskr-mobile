@@ -8,9 +8,9 @@ context: |
 
   Stack: Kotlin Multiplatform for shared contracts, network, queue and domain; native Android with Kotlin/Compose/WorkManager/DataStore/Room/Keystore; native iOS with Swift/SwiftUI, a Share Extension, background URLSession and Keychain. Generated Platform API contracts are the network source of truth.
 
-  This repository holds no code yet. Its documents describe intent; a change here plans behaviour, and the first code arrives with its own ci.yml, its lint configuration carrying the size limits, and its tests.
+  The repository is in architecture bootstrap. Buildable Android and iOS shells host one shared Compose root, generated Platform contract models compile in the shared module, and no capture, queue, authentication, transport, database or feature UI behaviour exists yet.
 
-  No product gate or .github/workflows/ci.yml exists yet. Current validation is `openspec validate --all --strict` and `openspec validate --archived`; the first scaffold adds its product command list and matching CI gate.
+  `DEVELOPMENT.md` is the product gate source of truth and `.github/workflows/ci.yml` runs its Android/shared-contract and iOS command families. OpenSpec validation remains `openspec validate --all --strict` and `openspec validate --archived`.
 
   Development status, binding and overriding anything that plans otherwise: one version only — no v2, no version negotiation, no deprecation window; no database migrations — a schema change edits the schema definition in place; the product is Ratatoskr and never "Ratatoskr Next". Only the repository owner changes this status.
 
