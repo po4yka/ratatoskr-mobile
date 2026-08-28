@@ -5,6 +5,8 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.compose.foundation)
             implementation(libs.compose.runtime)
             implementation(libs.compose.ui)
@@ -36,4 +38,10 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
     }
+}
+
+dependencies {
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }

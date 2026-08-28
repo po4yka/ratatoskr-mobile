@@ -10,7 +10,11 @@
    bounded device-root recovery, paired-elsewhere revocation, current-session fail-closed
    capabilities, Android Emulator Keystore, app-hosted iOS Simulator Keychain, and CI definitions;
    it is not live Platform, physical-device, signing, or provider evidence.
-3. Implement shared capture/queue models and local persistence from one current schema definition.
+3. **Complete (2026-08-28):** implement shared URL/text-note/staged-file capture models, monotonic
+   operation projections, and a durable bounded Room KMP queue from one current schema. Evidence
+   covers common Android/JVM and iOS Simulator behavior tests, Android Emulator and iOS Simulator
+   close/reopen tests, and the CI definitions; it is not share-target, submission-worker, live
+   Platform, physical-device file-protection, or staged-file lifecycle proof.
 4. Build Android Share Target, staging, offline submission, and operation status.
 5. Build iOS Share Extension/App Group staging, offline submission, and operation status.
 6. Add notes/collections/tags and article/social routing.

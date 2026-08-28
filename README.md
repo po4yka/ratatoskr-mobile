@@ -4,9 +4,9 @@
 
 > **Status:** architecture bootstrap. Buildable Android and iOS application shells host a shared
 > Compose Multiplatform pairing surface. Generated public Platform types back the implemented
-> device-pairing, rotating-session, revocation, and capability-discovery client. Share
-> targets/extensions, capture behavior, queue persistence, and local database behavior are not
-> implemented yet.
+> device-pairing, rotating-session, revocation, and capability-discovery client, plus shared
+> capture models, durable queue persistence, and operation projection. Share targets/extensions,
+> submission workers, and feature UI are not implemented yet.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -134,19 +134,18 @@ last error classification
 server operation ID, when accepted
 ```
 
-Planned states:
+Implemented shared states:
 
 ```text
-draft
 queued
-preparing_upload
-uploading
+in_flight
+retry_wait
+auth_required
 accepted
-processing
+tracking
 completed
-completed_with_warnings
-retryable_failure
 permanent_failure
+resolution_conflict
 cancelled
 ```
 
@@ -308,6 +307,9 @@ Current coverage includes:
   capability tests on Android/JVM and iOS Simulator targets;
 - Android Emulator Keystore and app-hosted iOS Simulator Keychain round trips;
 - shared generated-contract round trips on Android/JVM and iOS Simulator targets;
+- bounded capture-model, queue idempotency/FIFO/lease/retry/resolution, and monotonic operation
+  projection tests on Android/JVM and iOS Simulator targets;
+- current-schema Room close/reopen tests on Android Emulator and iOS Simulator;
 - deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
   generated output;
 - shell/ADR/CI parity tests;
@@ -317,7 +319,6 @@ Current coverage includes:
 
 Later feature coverage will add:
 
-- queue state-machine and idempotency tests;
 - Android Compose/UI and Share Target tests;
 - iOS SwiftUI and Share Extension tests;
 - offline/reconnect scenarios;
@@ -359,9 +360,10 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan items 1 and 2 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+Plan items 1 through 3 are implemented at repository level: Android/iOS shells, the shared/native ADR,
 pinned generated Platform models, device pairing/session behavior, native secure storage,
-capability discovery, and lint/test/build CI exist. Evidence covers deterministic transport tests,
-Android Emulator Keystore, app-hosted iOS Simulator Keychain, shared tests, and application builds;
-it does not prove live Platform pairing, a physical-device run, signing/provisioning, provider
-integration, share intake, or durable queue behavior.
+capability discovery, bounded capture/queue models, Room KMP persistence, operation projection, and
+lint/test/build CI exist. Evidence covers deterministic transport and queue tests, Android Emulator
+Keystore/Room, app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not
+prove live Platform pairing, a physical-device run, signing/provisioning, provider integration,
+share intake/submission, physical-device queue protection, or staged-file lifecycle.

@@ -19,7 +19,14 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
   credentials and current-session capabilities before exposing re-pairing.
 - **Deep-link spoof/replay:** allowlisted HTTPS/app routes, opaque one-time intents where needed, authenticated server state.
 - **Duplicate/external write surprise:** idempotency plus explicit mode/confirmation and truthful partial results.
-- **Local disclosure:** data protection/encryption policy, minimal cache, screenshot/notification privacy, safe logout/wipe.
+- **Duplicate submission after crash:** persist one idempotency key before work, recover expired
+  leases, reject stale claim tokens, converge on the same Platform operation, and fail closed if one
+  key resolves to conflicting operations.
+- **Queue cross-account disclosure:** owner-scope every record and claim; another instance/account
+  cannot dequeue it.
+- **Local disclosure:** Android private storage with backup disabled; iOS
+  CompleteUntilFirstUserAuthentication protection for the queue database and sidecars; minimal
+  projection/error data; screenshot/notification privacy and safe logout/wipe in their owning work.
 - **Background abuse/battery drain:** OS schedulers, constraints, backoff, user-visible controls.
 - **Supply-chain/release compromise:** pinned dependencies, signing, provenance, store/release verification.
 

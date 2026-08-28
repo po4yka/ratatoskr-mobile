@@ -1,6 +1,14 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
+buildscript {
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.13.2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10")
+        classpath("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.11")
+    }
+}
+
 plugins {
     base
 }

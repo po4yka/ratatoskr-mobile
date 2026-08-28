@@ -253,28 +253,16 @@ sequenceDiagram
 
 ## 9. Local queue architecture
 
-Suggested entities:
-
-```text
-capture_drafts
-queue_items
-staged_files
-submission_attempts
-operation_refs
-operation_results
-capability_snapshot
-device_state
-sync_cursors
-local_cache
-```
+ADR-0004 implements one Room KMP `capture_queue` aggregate as the current schema. It stores the
+immutable capture identity and bounded URL/text-note/opaque staged-file reference together with
+delivery state, attempt timing, finite lease, safe failure class, Platform operation binding, and a
+minimized monotonic operation projection. DAO and SQL details remain behind `CaptureQueue`.
 
 ### 9.1. Queue item state
 
 ```text
-draft
--> queued
--> preparing
--> submitting
+queued
+-> in_flight
 -> accepted
 -> tracking
 -> completed
@@ -284,22 +272,27 @@ Alternative states:
 
 ```text
 retry_wait
-paused
 auth_required
-needs_user_input
-failed_permanent
+permanent_failure
+resolution_conflict
 cancelled
 ```
 
-Every transition is durable and transactionally linked to staged-file ownership.
+Every transition is durable. Staged-file ownership and cleanup are introduced with share/file work;
+the current queue stores only an opaque app-owned reference.
 
 ### 9.2. Idempotency
 
-Each intentional capture receives a UUID idempotency key. Retries reuse the same key and request fingerprint. Editing semantic fields after submission creates a new operation rather than mutating the accepted request invisibly.
+Each intentional capture receives a stable idempotency key before enqueue commits. Retries reuse the
+same key and request fingerprint. Matching repeats converge; a reused key with different content or
+different Platform operations fails closed without overwriting the first observation.
 
 ### 9.3. Concurrency
 
-Queue submission uses bounded concurrency. File uploads may be serialized or limited independently from URL captures. Per-item state prevents duplicate simultaneous workers.
+Each owner-scoped source lane is FIFO. Only its oldest unfinished item can be claimed; another lane
+may proceed while that head waits. A finite lease and claim token recover abandoned work after
+process death and reject stale attempt outcomes. Retryable failures use bounded equal-jitter
+exponential backoff and later bounded server hints.
 
 ## 10. Staged-file lifecycle
 
@@ -495,20 +488,23 @@ Notification content is privacy-sensitive and configurable. Lock-screen previews
 
 ## 20. Local persistence
 
-A local database stores queue and cache state. While Ratatoskr remains in development, it has one
-current schema definition that is created fresh and tested on both platforms; schema migrations do
-not exist.
+A Room 3.0.1 KMP database stores the capture queue. While Ratatoskr remains in development, it has
+one current schema definition that is created fresh and tested on both platforms; schema migrations
+do not exist.
 
 Transactions group:
 
-- queue state and staged-file references;
-- attempt/result updates;
+- queue identity, ordering, leases, retry state, and opaque staged-file references;
+- Platform operation binding and minimized projection updates;
 - capability snapshot changes;
 - cache replacement and cursors.
 
 Secrets are never stored in the ordinary database.
 
-The KMP persistence abstraction must allow native encrypted/file-protection choices without forcing identical implementations.
+Android uses application-private storage with backup disabled. iOS accepts an explicit future App
+Group-compatible path and applies CompleteUntilFirstUserAuthentication protection to the database
+and existing SQLite sidecars. The persistence abstraction keeps those native choices outside common
+queue rules.
 
 ## 21. Privacy architecture
 
@@ -620,6 +616,7 @@ No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels
 - capture validation and payload limits;
 - queue state machine;
 - idempotency and retry policy;
+- monotonic operation projection and conflict handling;
 - operation/partial result mapping;
 - capability behavior;
 - freshness and cache rules.
@@ -649,6 +646,7 @@ No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels
 - resumable file upload;
 - operation SSE/polling;
 - fresh creation and validation of the current local database schema;
+- close/reopen persistence on Android Emulator and iOS Simulator;
 - cache authorization/logout purge.
 
 ### Workspace end-to-end

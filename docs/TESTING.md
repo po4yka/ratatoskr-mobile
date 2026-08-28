@@ -12,6 +12,19 @@ Required suites:
 
 Use synthetic files/local servers and platform emulators/simulators plus selected real-device lifecycle tests. No personal provider data in fixtures.
 
+## Capture queue gate
+
+Common tests cover bounded URL/text/file-reference models, exact serialization, enqueue convergence
+and conflict, owner isolation, per-source FIFO, lease expiry and stale tokens, equal-jitter backoff,
+server retry hints, exhaustion, permanent failures, authoritative operation binding, resolution
+conflict, and monotonic generated-contract projections.
+
+`AndroidCaptureQueuePersistenceTest` and `IosCaptureQueuePersistenceTest` create the Room database
+from an empty file, enqueue through `CaptureQueue`, close all handles, reopen the same path, and
+compare payload, source sequence, local ID, and idempotency key. Android runs on an emulator with
+backup disabled. The iOS Simulator verifies invocation of the native protection seam but does not
+expose the written `NSFileProtectionKey`; physical-device attribute inspection remains unverified.
+
 ## Device identity gate
 
 The current identity suite covers the Platform pairing outcome matrix, canonical HTTPS origins,

@@ -13,12 +13,14 @@ class RatatoskrKmpLibraryPlugin : Plugin<Project> {
         pluginManager.apply("com.android.library")
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
+        pluginManager.apply("com.google.devtools.ksp")
         pluginManager.apply("org.jetbrains.compose")
         pluginManager.apply("org.jlleitschuh.gradle.ktlint")
 
         extensions.configure<KtlintExtension> {
             filter {
                 exclude("**/api/generated/**")
+                exclude { element -> element.file.invariantSeparatorsPath.contains("/build/generated/") }
             }
         }
 
@@ -45,6 +47,7 @@ class RatatoskrKmpLibraryPlugin : Plugin<Project> {
                     isStatic = true
                 }
             }
+            compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
             compilerOptions.allWarningsAsErrors.set(true)
         }
     }

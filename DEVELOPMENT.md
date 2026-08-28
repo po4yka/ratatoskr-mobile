@@ -5,8 +5,9 @@
 
 The repository contains buildable Android and iOS application shells around one shared Compose
 Multiplatform root. Device pairing, rotating device sessions, native secure credential storage,
-and session-scoped Platform capability discovery are implemented. It does not yet contain capture
-features, share extensions, or a durable queue.
+and session-scoped Platform capability discovery are implemented. Shared URL, text-note, and
+staged-file-reference models plus the durable Room capture queue are implemented; share targets,
+submission workers, and feature UI are not.
 
 ## Toolchain
 
@@ -18,8 +19,8 @@ features, share extensions, or a durable queue.
 - OpenSpec 1.10.0 for proposal/spec validation.
 
 Kotlin/Compose and library versions are pinned in `gradle/libs.versions.toml`. Gradle is capped at
-four workers in `gradle.properties`. KSP is pinned but is intentionally not applied until a real
-processor-backed feature exists. Manual dependency injection is the bootstrap choice.
+four workers in `gradle.properties`. KSP generates the Room 3.0.1 KMP current-schema database for
+Android and both configured iOS targets. Manual dependency injection is the bootstrap choice.
 
 ## Product gate
 
@@ -59,6 +60,16 @@ XCTest target runs the real device-only, non-synchronizing Keychain round trip. 
 Kotlin/Native Simulator test is intentionally skipped because Security returns
 `errSecNotAvailable` without an application host; it remains compile coverage, while the hosted
 XCTest is the runtime gate.
+
+## Capture queue gate
+
+`CaptureQueueIdempotencyTest`, the ordering/retry/resolution common suites, and capture-model and
+operation-projection tests run through both shared test targets. `AndroidCaptureQueuePersistenceTest`
+and `IosCaptureQueuePersistenceTest` create the one current Room schema from an empty file and prove
+close/reopen preservation of payload, source sequence, local ID, and idempotency key. The iOS suite
+also proves the native protection seam is invoked. iOS Simulator does not report
+`NSFileProtectionKey` after a successful attribute write, so physical-device attribute inspection
+is a release-check gap rather than claimed simulator evidence.
 
 ## Generated Platform contracts
 

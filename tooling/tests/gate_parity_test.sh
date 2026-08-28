@@ -23,6 +23,17 @@ for shared_test in ':shared:testDebugUnitTest' ':shared:iosSimulatorArm64Test'; 
     assert_in_file "$workflow" "$shared_test" "ci_runs_shared_tests"
 done
 
+queue_gate_markers=(
+    'CaptureQueueIdempotencyTest'
+    'AndroidCaptureQueuePersistenceTest'
+    'IosCaptureQueuePersistenceTest'
+)
+
+for marker in "${queue_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_capture_queue_current_schema_tests"
+    assert_in_file "$workflow" "$marker" "ci_runs_capture_queue_current_schema_tests"
+done
+
 required_commands=(
     './gradlew --no-daemon ktlintCheck'
     './tooling/contracts/check.sh'
@@ -44,6 +55,7 @@ done
 if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_shared_tests"
     echo "ok - documented_gate_matches_ci"
+    echo "ok - ci_runs_capture_queue_current_schema_tests"
 fi
 
 exit "$failures"

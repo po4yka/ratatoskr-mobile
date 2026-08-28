@@ -41,3 +41,29 @@ for term in "${required_terms[@]}"; do
 done
 
 printf 'ok - %s\n' "$test_name"
+
+test_name="adr_0004_records_current_schema_and_queue_semantics"
+queue_adr="$repo_root/docs/adr/0004-durable-offline-capture-queue.md"
+[[ -f "$queue_adr" ]] || fail "ADR-0004 is absent"
+
+queue_terms=(
+  "Status: Accepted"
+  "Room 3.0.1 KMP"
+  "one current schema"
+  "No migrations"
+  "CaptureQueue"
+  "source lane"
+  "idempotency key"
+  "equal jitter"
+  "finite lease"
+  "claim token"
+  "resolution conflict"
+  "NSFileProtectionCompleteUntilFirstUserAuthentication"
+  'android:allowBackup="false"'
+)
+
+for term in "${queue_terms[@]}"; do
+  grep -Fq "$term" "$queue_adr" || fail "ADR-0004 does not record: $term"
+done
+
+printf 'ok - %s\n' "$test_name"

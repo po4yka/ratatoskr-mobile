@@ -17,6 +17,7 @@ ktlint-plugin = "14.2.0"
 lifecycle = "2.10.0"
 navigation3 = "1.0.0+dev2861"
 room = "3.0.1"
+sqlite = "2.7.0"
 serialization = "1.11.0"
 turbine = "1.2.1"
 
@@ -27,6 +28,8 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "android
 androidx-test-ext-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "androidx-test-ext" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose" }
