@@ -26,7 +26,12 @@
    covers shared iOS tests plus hosted parser/handoff/scheduler/Keychain/status and a synthetic
    simulator smoke across Room close/reopen; it is not live Platform, guaranteed OS background
    delivery, physical-device budget, release signing, file upload, provider, or App Store proof.
-6. Add notes/collections/tags and article/social routing.
+6. **Complete (2026-08-29):** consume live Platform recent-analysis/read-state contracts and add
+   shared Compose library/reader surfaces, reset-on-restart contract fixtures for favorite, note,
+   collections, tags, article/social/AI-archive readers, and strict native custom-scheme handoff.
+   Evidence covers generated-contract drift/mutation, shared Android/JVM and iOS Simulator tests,
+   API 35 Compose/deep-link instrumentation, and iOS hosted routing XCTest; it is not live full
+   reader/curation, provider, universal-link, physical-device, or persistence proof.
 7. Add GitHub metadata/track/star with explicit write confirmation.
 8. Add resumable file upload, retention/cleanup, background constraints, revoke/clear-data.
 9. Add library/search/deep links/notifications, accessibility and privacy polish.

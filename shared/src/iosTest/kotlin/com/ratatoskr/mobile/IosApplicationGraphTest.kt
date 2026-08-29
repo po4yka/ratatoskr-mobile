@@ -1,10 +1,19 @@
 package com.ratatoskr.mobile
 
+import com.ratatoskr.mobile.api.generated.model.LibraryPage
 import com.ratatoskr.mobile.api.generated.model.OperationList
 import com.ratatoskr.mobile.api.generated.model.OperationSnapshot
+import com.ratatoskr.mobile.api.generated.model.ReadState
+import com.ratatoskr.mobile.api.generated.model.ReadStateResource
 import com.ratatoskr.mobile.capture.CaptureOwner
 import com.ratatoskr.mobile.capture.CaptureSource
 import com.ratatoskr.mobile.identity.Authorization
+import com.ratatoskr.mobile.library.FixtureIds
+import com.ratatoskr.mobile.library.FixtureMutationResult
+import com.ratatoskr.mobile.library.LibraryAccess
+import com.ratatoskr.mobile.library.LibraryApplicationGraph
+import com.ratatoskr.mobile.library.LibraryRepository
+import com.ratatoskr.mobile.library.LibraryRepositoryResult
 import com.ratatoskr.mobile.operation.OperationRepositoryResult
 import com.ratatoskr.mobile.operation.OperationStatusRepository
 import com.ratatoskr.mobile.queue.MutableQueueClock
@@ -22,6 +31,7 @@ import com.ratatoskr.mobile.submission.PlatformCaptureResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
@@ -33,6 +43,24 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 class IosApplicationGraphTest {
+    @Test
+    fun library_stores_share_live_authorization_and_fixture_authority_without_network_curation() =
+        runTest {
+            val live = CountingLibraryRepository()
+            val graph =
+                LibraryApplicationGraph(
+                    liveRepository = live,
+                    access = MutableStateFlow(LibraryAccess.Available(canReplaceReadState = true)),
+                    scope = backgroundScope,
+                )
+
+            assertNotNull(graph.listStore)
+            assertNotNull(graph.readerStore)
+            assertTrue(graph.content.fixtures === graph.fixtures)
+            assertTrue(graph.fixtures.toggleFavorite(FixtureIds.ARTICLE) is FixtureMutationResult.Success)
+            assertEquals(0, live.calls)
+        }
+
     @Test
     fun foreground_reconcile_drains_eligible_handoff() =
         runTest {
@@ -219,6 +247,25 @@ class IosApplicationGraphTest {
 
         override suspend fun read(operationId: String): OperationRepositoryResult<OperationSnapshot> =
             OperationRepositoryResult.NotFoundOrNotOwned
+    }
+
+    private class CountingLibraryRepository : LibraryRepository {
+        var calls = 0
+
+        override suspend fun recent(): LibraryRepositoryResult<LibraryPage> {
+            calls += 1
+            return LibraryRepositoryResult.Success(
+                LibraryPage(hasMore = false, items = emptyList(), limit = 25, offset = 0),
+            )
+        }
+
+        override suspend fun replaceReadState(
+            analysisId: String,
+            readState: ReadState,
+        ): LibraryRepositoryResult<ReadStateResource> {
+            calls += 1
+            return LibraryRepositoryResult.NotFoundOrNotOwned
+        }
     }
 
     private companion object {

@@ -51,6 +51,10 @@ final class IosAppModel: ObservableObject {
     Task { await importNextHandoff() }
   }
 
+  func openLibraryURL(_ url: URL) {
+    _ = controller.acceptLibraryLink(value: url.absoluteString)
+  }
+
   private func importNextHandoff() async {
     guard claim == nil, let inbox else { return }
     do {

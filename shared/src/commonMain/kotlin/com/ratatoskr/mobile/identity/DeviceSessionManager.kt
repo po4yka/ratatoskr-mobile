@@ -67,6 +67,8 @@ enum class MobileCapability(
     SocialThreads("social.threads"),
     ArchiveChatgpt("archive.chatgpt"),
     ArchiveClaude("archive.claude"),
+    LibrarySearch("library.search"),
+    LibraryReadState("library.read_state"),
     TelegramIntegration("telegram.integration"),
     Search("search"),
 }

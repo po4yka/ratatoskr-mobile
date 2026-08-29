@@ -9,6 +9,10 @@ import com.ratatoskr.mobile.identity.DeviceIdentityState
 import com.ratatoskr.mobile.identity.DeviceSessionManager
 import com.ratatoskr.mobile.identity.KtorPlatformIdentityApi
 import com.ratatoskr.mobile.identity.MobileCapability
+import com.ratatoskr.mobile.library.AuthorizedLibraryRepository
+import com.ratatoskr.mobile.library.KtorPlatformLibraryApi
+import com.ratatoskr.mobile.library.LibraryAccess
+import com.ratatoskr.mobile.library.LibraryApplicationGraph
 import com.ratatoskr.mobile.notification.createAndroidCaptureStatusNotifier
 import com.ratatoskr.mobile.operation.AuthorizedOperationStatusRepository
 import com.ratatoskr.mobile.operation.KtorPlatformOperationsApi
@@ -80,6 +84,7 @@ class AndroidApplicationContainer(
             KtorPlatformIdentityApi(client),
             AndroidKeystoreCredentialStorage(application),
         )
+    private val authorizedRequests = DeviceAuthorizedRequestExecutor(sessions)
     private val productionShareSubmissionAccess =
         combine(sessions.state, sessions.capabilities) { identity, capabilities ->
             when {
@@ -109,7 +114,31 @@ class AndroidApplicationContainer(
         CaptureSubmissionCoordinator(
             queue = queue,
             api = KtorPlatformCaptureApi(client, now = { clock.now() }),
-            authorizedRequests = DeviceAuthorizedRequestExecutor(sessions),
+            authorizedRequests = authorizedRequests,
+        )
+    private val libraryAccess =
+        combine(sessions.state, sessions.capabilities) { identity, capabilities ->
+            when {
+                identity !is DeviceIdentityState.Paired -> LibraryAccess.PairingRequired
+                capabilities !is CapabilityState.Ready ||
+                    MobileCapability.LibrarySearch.wireName !in capabilities.snapshot.names ->
+                    LibraryAccess.CapabilityUnavailable
+                else ->
+                    LibraryAccess.Available(
+                        canReplaceReadState =
+                            MobileCapability.LibraryReadState.wireName in capabilities.snapshot.names,
+                    )
+            }
+        }.stateIn(appScope, SharingStarted.Eagerly, LibraryAccess.PairingRequired)
+    val library =
+        LibraryApplicationGraph(
+            liveRepository =
+                AuthorizedLibraryRepository(
+                    KtorPlatformLibraryApi(client),
+                    authorizedRequests,
+                ),
+            access = libraryAccess,
+            scope = appScope,
         )
     internal var operationRepository: com.ratatoskr.mobile.operation.OperationStatusRepository =
         AuthorizedOperationStatusRepository(

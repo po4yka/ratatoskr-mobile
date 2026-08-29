@@ -8,6 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.ratatoskr.mobile.library.ContentRouteResult
+import com.ratatoskr.mobile.library.ContentRouteTable
+import com.ratatoskr.mobile.library.routeIdOrNull
 import com.ratatoskr.mobile.operation.OperationListStore
 import com.ratatoskr.mobile.share.AndroidShareIntentParser
 import com.ratatoskr.mobile.share.ShareIntakeResult
@@ -27,6 +30,9 @@ class MainActivity : ComponentActivity() {
         private set
     internal var pendingOperationId by mutableStateOf<String?>(null)
         private set
+    private var pendingContentRoute: ContentRouteResult? by mutableStateOf(null)
+    internal val pendingContentRouteId: String?
+        get() = pendingContentRoute?.routeIdOrNull()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +50,8 @@ class MainActivity : ComponentActivity() {
                 operationDetailStore = { container.createOperationDetailStore(it, lifecycleScope) },
                 detailPollingVisible = isResumed,
                 onDetailStoreActive = { activeDetailStore = it },
+                library = container.library,
+                initialContentRoute = pendingContentRoute,
             )
         }
     }
@@ -90,13 +98,25 @@ class MainActivity : ComponentActivity() {
         when (intent.action) {
             Intent.ACTION_SEND -> {
                 pendingOperationId = null
+                pendingContentRoute = null
                 pendingShareIntake = shareParser.parse(intent)
             }
             ACTION_VIEW_OPERATION -> {
                 pendingShareIntake = null
+                pendingContentRoute = null
                 pendingOperationId = intent.getStringExtra(EXTRA_OPERATION_ID)?.let(::validatedOperationId)
             }
+            Intent.ACTION_VIEW -> intent.dataString?.let(::acceptLibraryLink)
         }
+    }
+
+    internal fun acceptLibraryLink(value: String): Boolean {
+        val parsed = ContentRouteTable.parse(value)
+        if (parsed !is ContentRouteResult.Accepted) return false
+        pendingShareIntake = null
+        pendingOperationId = null
+        pendingContentRoute = parsed
+        return true
     }
 
     companion object {

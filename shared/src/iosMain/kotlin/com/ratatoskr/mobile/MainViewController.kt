@@ -9,6 +9,7 @@ import platform.UIKit.UIViewController
 fun MainViewController(controller: IosApplicationController): UIViewController =
     ComposeUIViewController {
         val shareStore by controller.shareStore.collectAsState()
+        val libraryRoute by controller.libraryRoute.collectAsState()
         RatatoskrApp(
             sessionManager = controller.sessions,
             shareStore = shareStore,
@@ -16,5 +17,7 @@ fun MainViewController(controller: IosApplicationController): UIViewController =
             operationDetailStore = controller::createOperationDetailStore,
             detailPollingVisible = controller.sceneActive,
             onDetailStoreActive = { controller.activeDetailStore = it },
+            library = controller.library,
+            initialContentRoute = libraryRoute,
         )
     }

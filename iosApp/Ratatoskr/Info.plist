@@ -6,8 +6,19 @@
   <array>
     <string>com.ratatoskr.mobile.submission.refresh</string>
   </array>
-  <key>CFBundleDisplayName</key>
-  <string>Ratatoskr</string>
+	<key>CFBundleDisplayName</key>
+	<string>Ratatoskr</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ratatoskr</string>
+			</array>
+		</dict>
+	</array>
   <key>CFBundleExecutable</key>
   <string>$(EXECUTABLE_NAME)</string>
   <key>CFBundleIdentifier</key>

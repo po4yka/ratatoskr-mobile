@@ -17,7 +17,16 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
   Ktor clients.
 - **Revoked authorization:** refusal of both refresh and device-root recovery clears local
   credentials and current-session capabilities before exposing re-pairing.
-- **Deep-link spoof/replay:** allowlisted HTTPS/app routes, opaque one-time intents where needed, authenticated server state.
+- **Deep-link spoof/replay:** the current custom scheme accepts only exact lowercase
+  `ratatoskr://library/{analyses|social|ai-archives}/...` shapes with canonical UUIDs; it rejects
+  user-info, query, fragment, percent encoding, traversal, unknown providers, and extra segments.
+  Links carry opaque IDs only, and live content still requires authenticated owner-scoped reads.
+- **Untrusted reader content:** render contract-fixed blocks, provenance, warnings, notes, and
+  titles only through inert Compose text primitives; do not use WebView/HTML execution or infer
+  provider Saved authority.
+- **Fixture authority confusion:** label every local curation/reader fixture unsynchronized and
+  integration-pending, reset it on process restart, and make fixture mutations issue zero Platform
+  calls so preview state cannot masquerade as durable user content.
 - **Android intent injection:** export only the documented `ACTION_SEND text/plain` surface; bound
   payload bytes; accept exactly one HTTP(S) URL; route internal status intents explicitly and
   validate the canonical operation UUID before any authenticated fetch.

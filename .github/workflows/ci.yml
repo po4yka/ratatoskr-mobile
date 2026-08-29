@@ -57,6 +57,7 @@ jobs:
           ./tooling/tests/bootstrap_structure_test.sh
           ./tooling/tests/architecture_boundary_test.sh
           ./tooling/tests/gate_parity_test.sh
+          ./tooling/tests/platform_library_contract_test.sh
 
       - name: Kotlin lint
         run: ./gradlew --no-daemon ktlintCheck
@@ -67,13 +68,17 @@ jobs:
       - name: Contract mutation and generated-tree tests
         run: ./tooling/tests/contract_drift_test.sh
 
-      - name: Shared Android tests including CaptureQueueIdempotencyTest and Android build
+      - name: >-
+          Shared Android tests including CaptureQueueIdempotencyTest, PlatformLibraryApiTest,
+          LibraryListStoreTest, FixtureUserContentRepositoryTest, LibraryReaderStoreTest,
+          ContentRouteTableTest, and Android build
         run: ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
 
       - name: >-
           Android Keystore, AndroidCaptureQueuePersistenceTest, AndroidShareIntentParserTest,
           ShareStagingUiTest, CaptureSubmissionWorkerTest, OperationStatusUiTest,
-          CaptureStatusNotificationTest, and AndroidShareSmokeTest instrumentation
+          CaptureStatusNotificationTest, AndroidShareSmokeTest, LibraryDeepLinkIntentTest,
+          and LibraryUiTest instrumentation
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
@@ -140,7 +145,7 @@ jobs:
       - name: >-
           ShareExtensionParserTests, AppGroupEnvelopeTests, AppGroupInboxImporterTests,
           IosKeychainCredentialStorageTests, IosSubmissionSchedulerTests,
-          IosSubmissionStatusFlowTests, and IosShareSmokeTests
+          IosSubmissionStatusFlowTests, IosShareSmokeTests, and IosLibraryRoutingTests
         run: |
           simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"
           xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" -resultBundlePath build/ios-share-test-results.xcresult test

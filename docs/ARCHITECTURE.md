@@ -360,7 +360,8 @@ POST /v1/github/repositories
 POST /v1/ai-archives/imports, when mobile upload is supported
 GET  /v1/operations/{id}
 GET  /v1/operations/{id}/events
-GET  /v1/library
+GET  /v1/library/search
+PUT  /v1/library/items/{analysis_id}/read-state
 GET  /v1/search
 ```
 
@@ -380,6 +381,8 @@ social.instagram_capture
 social.threads_capture
 archive.chatgpt
 archive.claude
+library.search
+library.read_state
 search
 ```
 
@@ -428,38 +431,31 @@ Archive uploaded, import completed with missing attachments
 
 ## 16. Library and search architecture
 
-The mobile app maintains a bounded local cache for responsiveness and offline viewing.
+The implemented live boundary is a capability-gated blank-query recent page plus pessimistic
+read-state replacement through generated Platform types. It preserves Platform ordering and does
+not add a local cache or synthesize timestamps.
 
-Cached projections may include:
-
-- item IDs, titles, types, timestamps, and status;
-- small summaries and thumbnails under policy;
-- collection/tag metadata;
-- operation results;
-- recent search queries/results.
-
-Authoritative archive content remains server-side. Cache entries are versioned, evictable, and authorization-aware.
-
-Search executes through Platform/Knowledge. Local search may cover only cached metadata/content and is labelled accordingly.
+Full reader, favorite, note, collection, tag, social-reader, and AI-archive-reader contracts are
+not public. A separate in-memory contract-fixture repository supplies those shared Compose
+surfaces, marks every projection `ContractFixture`/integration-pending, resets on process restart,
+and never calls Platform. Fixture content is a small inert block model; no HTML or WebView is used.
 
 ## 17. Navigation and deep links
 
-Typed destinations include:
+Implemented library destinations include:
 
 ```text
-CaptureDraft
-OperationDetail
-LibraryItem
-ArticleDetail
-RepositoryDetail
-SocialSourceDetail
-AIProjectDetail
-ConversationDetail
-Search
+ratatoskr://library/analyses/<canonical-uuid>
+ratatoskr://library/social/<x|instagram|threads>/<canonical-uuid>
+ratatoskr://library/ai-archives/<chatgpt|claude>/<canonical-uuid>
 Settings
 ```
 
-Deep links carry opaque IDs, not sensitive content or provider tokens. The app reauthorizes and fetches current state before display.
+Android `ACTION_VIEW` and iOS `onOpenURL` forward the raw string into one shared exact parser. The
+parser rejects noncanonical case/UUIDs, query, fragment, credentials, percent encoding, traversal,
+unknown providers, and extra segments. Universal/app links are not configured. Deep links carry
+opaque IDs, not sensitive content or provider tokens; live reads remain authenticated and
+owner-scoped.
 
 ## 18. Background execution
 

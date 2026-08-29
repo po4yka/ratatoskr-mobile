@@ -9,6 +9,7 @@ struct RatatoskrApp: App {
     WindowGroup {
       ComposeRootView(controller: model.controller)
         .ignoresSafeArea()
+        .onOpenURL { model.openLibraryURL($0) }
     }
     .onChange(of: scenePhase, initial: true) { _, phase in
       model.setSceneActive(phase == .active)

@@ -84,6 +84,20 @@ extension. CI retains `ios-share-test-results`. These are synthetic simulator re
 live Platform, physical-device budget/background delivery, release-signing, file-upload, provider,
 or App Store evidence.
 
+## Library, reader, and routing gate
+
+The generated contract/transport suite verifies the exact recent and read-state resources,
+bounded query/body encoding, redirect refusal, authorization, and unavailable/uncertain outcomes.
+Common Android/JVM and iOS Simulator suites cover capability-gated list order, pessimistic
+read-state replacement, fixture favorite/note/collection/tag semantics, provenance/warnings,
+social Saved-authority limits, AI archive completeness, and the exact custom-scheme route table.
+
+API 35 `LibraryUiTest` instrumentation checks shared Compose list/read state, fixture labels and
+mutations, inert hostile text, and loading/empty/offline/reauth/integration-pending states.
+`LibraryDeepLinkIntentTest` and hosted `IosLibraryRoutingTests` check cold/warm native handoff and
+that invalid external links preserve the current destination. All content is synthetic. This is
+not live Platform full-content/curation, universal-link, provider, or physical-device evidence.
+
 ## Test-first
 
 A change is planned before it is built, and the plan is a task list in which behaviour arrives in

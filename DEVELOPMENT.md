@@ -1,6 +1,6 @@
 # Developing Ratatoskr Mobile
 
-> Status: Android and iOS URL Share surfaces implemented
+> Status: Android/iOS URL Share and shared library preview surfaces implemented
 > Last reviewed: 2026-08-29
 
 The repository contains buildable Android and iOS application shells around one shared Compose
@@ -12,6 +12,9 @@ generic notifications, and validated operation-detail routing are implemented. T
 Extension performs bounded native parsing and atomic App Group staging; the main app confirms
 through shared Compose, submits from the Room queue, and exposes shared operation status. File
 uploads are not implemented.
+The shared library now consumes Platform `library.search` and `library.read_state`; full reader,
+favorite, note, collection, tag, social, and AI-archive data remains an explicitly unsynchronized
+contract-fixture preview until public Platform contracts exist.
 
 ## Toolchain
 
@@ -37,6 +40,7 @@ underlying commands directly.
 ./tooling/tests/architecture_boundary_test.sh
 ./tooling/tests/gate_parity_test.sh
 ./tooling/tests/ios_share_entitlements_test.sh
+./tooling/tests/platform_library_contract_test.sh
 
 build-gate -- ./gradlew --no-daemon ktlintCheck
 build-gate -- ./tooling/contracts/check.sh
@@ -69,7 +73,7 @@ XCTest is the runtime gate.
 
 Android app instrumentation covers `AndroidShareIntentParserTest`, `ShareStagingUiTest`,
 `CaptureSubmissionWorkerTest`, `OperationStatusUiTest`, `CaptureStatusNotificationTest`, and the
-end-to-end `AndroidShareSmokeTest`. The smoke uses only synthetic data and a deterministic
+end-to-end `AndroidShareSmokeTest`, plus `LibraryDeepLinkIntentTest` and `LibraryUiTest`. The smoke uses only synthetic data and a deterministic
 operation fixture on an API 35 emulator; it proves activity/database reopen and UI wiring, not a
 live Platform deployment or physical device. Hosted CI retains the report as the
 `android-share-test-reports` artifact.
@@ -89,6 +93,17 @@ the App Group importer, close/reopen the real Room KMP queue with the same idemp
 render a terminal fixture status. CI retains its content-free result as `ios-share-test-results`.
 The smoke is simulator/fixture proof, not live Platform, guaranteed BackgroundTasks delivery,
 physical-device extension budget, provider, release-signing, file-upload, or App Store proof.
+`IosLibraryRoutingTests` proves cold/warm custom-scheme handoff and fail-closed invalid-link handling.
+
+## Library and content-routing gate
+
+`PlatformLibraryApiTest` and `LibraryListStoreTest` cover the generated live recent/read-state
+boundary, capability gating, authorization, pessimistic mutations, and uncertain outcomes.
+`FixtureUserContentRepositoryTest` and `LibraryReaderStoreTest` cover reset-on-restart favorite,
+note, collection/tag membership, provenance, warnings, social authority, and AI archive
+completeness without Platform calls. `ContentRouteTableTest` accepts only the documented
+lowercase canonical UUID routes and rejects query, fragment, credentials, encoding ambiguity,
+traversal, unknown providers, and extra segments.
 
 ## Capture queue gate
 

@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,18 @@ import com.ratatoskr.mobile.identity.DeviceIdentityUiState
 import com.ratatoskr.mobile.identity.DeviceIdentityViewModel
 import com.ratatoskr.mobile.identity.DeviceSessionManager
 import com.ratatoskr.mobile.identity.IdentityFailure
+import com.ratatoskr.mobile.library.AiArchiveReaderRoute
+import com.ratatoskr.mobile.library.ArticleReaderRoute
+import com.ratatoskr.mobile.library.ContentRouteResult
+import com.ratatoskr.mobile.library.FixtureLibraryRoute
+import com.ratatoskr.mobile.library.FixtureLibrarySurface
+import com.ratatoskr.mobile.library.LibraryApplicationGraph
+import com.ratatoskr.mobile.library.LibraryListRoute
+import com.ratatoskr.mobile.library.LibraryListSurface
+import com.ratatoskr.mobile.library.LibraryReaderRequest
+import com.ratatoskr.mobile.library.LibraryReaderSurface
+import com.ratatoskr.mobile.library.SocialReaderRoute
+import com.ratatoskr.mobile.library.readerRoute
 import com.ratatoskr.mobile.operation.OperationDetailRoute
 import com.ratatoskr.mobile.operation.OperationDetailStore
 import com.ratatoskr.mobile.operation.OperationDetailSurface
@@ -46,6 +59,7 @@ import com.ratatoskr.mobile.share.ShareIntakeRejection
 import com.ratatoskr.mobile.share.ShareRejectionSurface
 import com.ratatoskr.mobile.share.ShareStagingStore
 import com.ratatoskr.mobile.share.ShareStagingSurface
+import kotlinx.coroutines.launch
 
 @Composable
 @Suppress("ktlint:standard:function-naming")
@@ -59,11 +73,16 @@ fun RatatoskrApp(
     operationDetailStore: ((String) -> OperationDetailStore)? = null,
     detailPollingVisible: Boolean = true,
     onDetailStoreActive: (OperationDetailStore?) -> Unit = {},
+    library: LibraryApplicationGraph? = null,
+    initialContentRoute: ContentRouteResult? = null,
 ) {
     val identityViewModel = viewModel { DeviceIdentityViewModel(sessionManager) }
     val state by identityViewModel.uiState.collectAsState()
-    var route: NavKey? by remember(initialOperationId) {
-        mutableStateOf(initialOperationId?.let(::OperationDetailRoute))
+    var route: NavKey? by remember(initialOperationId, initialContentRoute) {
+        mutableStateOf(
+            (initialContentRoute as? ContentRouteResult.Accepted)?.route
+                ?: initialOperationId?.let(::OperationDetailRoute),
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
@@ -77,7 +96,11 @@ fun RatatoskrApp(
                 OperationListRoute -> {
                     val store = operationListStore
                     if (store == null) {
-                        IdentitySurface(state, identityViewModel::dispatch) { route = OperationListRoute }
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                        )
                     } else {
                         val operations by store.state.collectAsState()
                         LaunchedEffect(store) { store.refresh() }
@@ -94,7 +117,11 @@ fun RatatoskrApp(
                             operationDetailStore?.invoke(currentRoute.operationId)
                         }
                     if (store == null) {
-                        IdentitySurface(state, identityViewModel::dispatch) { route = OperationListRoute }
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                        )
                     } else {
                         val detail by store.state.collectAsState()
                         DisposableEffect(store) {
@@ -115,7 +142,113 @@ fun RatatoskrApp(
                         )
                     }
                 }
-                else -> IdentitySurface(state, identityViewModel::dispatch) { route = OperationListRoute }
+                LibraryListRoute -> {
+                    val graph = library
+                    if (graph == null) {
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                            onOpenLibrary = { route = LibraryListRoute },
+                        )
+                    } else {
+                        val libraryState by graph.listStore.state.collectAsState()
+                        LaunchedEffect(graph.listStore) { graph.listStore.refresh() }
+                        LibraryListSurface(
+                            state = libraryState,
+                            onRefresh = graph.listStore::refresh,
+                            onReplaceReadState = graph.listStore::replaceReadState,
+                            onOpen = { request ->
+                                graph.readerStore.load(request)
+                                val live = request as LibraryReaderRequest.LiveSummary
+                                route = ArticleReaderRoute(live.item.analysisId)
+                            },
+                            onOpenFixtures = { route = FixtureLibraryRoute },
+                        )
+                    }
+                }
+                FixtureLibraryRoute -> {
+                    val graph = library
+                    if (graph == null) {
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                            onOpenLibrary = { route = LibraryListRoute },
+                        )
+                    } else {
+                        val catalog by graph.fixtures.state.collectAsState()
+                        val scope = rememberCoroutineScope()
+                        FixtureLibrarySurface(
+                            catalog = catalog,
+                            onToggleFavorite = { id -> scope.launch { graph.fixtures.toggleFavorite(id) } },
+                            onSaveNote = { id, note -> scope.launch { graph.fixtures.saveNote(id, note) } },
+                            onCollectionMembership = { itemId, collectionId, included ->
+                                scope.launch {
+                                    graph.fixtures.setCollectionMembership(itemId, collectionId, included)
+                                }
+                            },
+                            onTagMembership = { itemId, tagId, included ->
+                                scope.launch { graph.fixtures.setTagMembership(itemId, tagId, included) }
+                            },
+                            onOpen = { id ->
+                                catalog.item(id)?.let { item ->
+                                    graph.readerStore.load(LibraryReaderRequest.Fixture(id))
+                                    route = item.readerRoute()
+                                }
+                            },
+                        )
+                    }
+                }
+                is ArticleReaderRoute,
+                is SocialReaderRoute,
+                is AiArchiveReaderRoute,
+                -> {
+                    val graph = library
+                    if (graph == null) {
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                            onOpenLibrary = { route = LibraryListRoute },
+                        )
+                    } else {
+                        val destinationId =
+                            when (currentRoute) {
+                                is ArticleReaderRoute -> currentRoute.analysisId
+                                is SocialReaderRoute -> currentRoute.sourceId
+                                is AiArchiveReaderRoute -> currentRoute.itemId
+                                else -> error("unreachable")
+                            }
+                        LaunchedEffect(currentRoute) {
+                            val fixture =
+                                graph.fixtures.state.value
+                                    .item(destinationId)
+                            if (fixture != null) {
+                                graph.readerStore.load(LibraryReaderRequest.Fixture(destinationId))
+                            } else {
+                                val live =
+                                    (graph.listStore.state.value as? com.ratatoskr.mobile.library.LibraryListState.Content)
+                                        ?.items
+                                        ?.firstOrNull { it.analysisId == destinationId }
+                                if (live == null) {
+                                    graph.readerStore.load(LibraryReaderRequest.Fixture(destinationId))
+                                } else {
+                                    graph.readerStore.load(LibraryReaderRequest.LiveSummary(live))
+                                }
+                            }
+                        }
+                        val reader by graph.readerStore.state.collectAsState()
+                        LibraryReaderSurface(reader) { route = LibraryListRoute }
+                    }
+                }
+                else ->
+                    IdentitySurface(
+                        state,
+                        identityViewModel::dispatch,
+                        onOpenOperations = { route = OperationListRoute },
+                        onOpenLibrary = { route = LibraryListRoute },
+                    )
             }
         }
     }
@@ -127,6 +260,7 @@ private fun IdentitySurface(
     state: DeviceIdentityUiState,
     dispatch: (DeviceIdentityAction) -> Unit,
     onOpenOperations: () -> Unit = {},
+    onOpenLibrary: () -> Unit = {},
 ) {
     Column(
         modifier =
@@ -141,7 +275,7 @@ private fun IdentitySurface(
         when (state) {
             is DeviceIdentityUiState.PairingForm -> PairingForm(state, dispatch)
             DeviceIdentityUiState.Working -> BasicText("Working…")
-            is DeviceIdentityUiState.Paired -> PairedSession(state, dispatch, onOpenOperations)
+            is DeviceIdentityUiState.Paired -> PairedSession(state, dispatch, onOpenOperations, onOpenLibrary)
             DeviceIdentityUiState.RePairingRequired -> {
                 BasicText("This device session was revoked. Pair it again to continue.")
                 ActionButton("Pair again") { dispatch(DeviceIdentityAction.SignOut) }
@@ -188,6 +322,7 @@ private fun PairedSession(
     state: DeviceIdentityUiState.Paired,
     dispatch: (DeviceIdentityAction) -> Unit,
     onOpenOperations: () -> Unit,
+    onOpenLibrary: () -> Unit,
 ) {
     BasicText("Paired with ${state.origin}")
     BasicText(if (state.capabilitiesFresh) "Capabilities are current" else "Capabilities are unavailable or stale")
@@ -196,6 +331,7 @@ private fun PairedSession(
     }
     ActionButton("Refresh capabilities") { dispatch(DeviceIdentityAction.RefreshCapabilities) }
     ActionButton("Operations", onClick = onOpenOperations)
+    ActionButton("Library", onClick = onOpenLibrary)
     ActionButton("Sign out on this device") { dispatch(DeviceIdentityAction.SignOut) }
 }
 

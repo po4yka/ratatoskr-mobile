@@ -8,6 +8,13 @@ import com.ratatoskr.mobile.identity.DeviceSessionManager
 import com.ratatoskr.mobile.identity.IosKeychainCredentialStorage
 import com.ratatoskr.mobile.identity.KtorPlatformIdentityApi
 import com.ratatoskr.mobile.identity.MobileCapability
+import com.ratatoskr.mobile.library.AuthorizedLibraryRepository
+import com.ratatoskr.mobile.library.ContentRouteResult
+import com.ratatoskr.mobile.library.ContentRouteTable
+import com.ratatoskr.mobile.library.KtorPlatformLibraryApi
+import com.ratatoskr.mobile.library.LibraryAccess
+import com.ratatoskr.mobile.library.LibraryApplicationGraph
+import com.ratatoskr.mobile.library.routeIdOrNull
 import com.ratatoskr.mobile.operation.AuthorizedOperationStatusRepository
 import com.ratatoskr.mobile.operation.KtorPlatformOperationsApi
 import com.ratatoskr.mobile.operation.OperationDetailStore
@@ -160,6 +167,26 @@ class IosApplicationController(
         )
     private val scheduler = SubmissionScheduler { instant -> scheduleNativeWake(instant?.toEpochMilliseconds()) }
     private val authorizedRequests = DeviceAuthorizedRequestExecutor(sessions)
+    private val libraryAccess =
+        combine(sessions.state, sessions.capabilities) { identity, capabilities ->
+            when {
+                identity !is DeviceIdentityState.Paired -> LibraryAccess.PairingRequired
+                capabilities !is CapabilityState.Ready ||
+                    MobileCapability.LibrarySearch.wireName !in capabilities.snapshot.names ->
+                    LibraryAccess.CapabilityUnavailable
+                else ->
+                    LibraryAccess.Available(
+                        canReplaceReadState =
+                            MobileCapability.LibraryReadState.wireName in capabilities.snapshot.names,
+                    )
+            }
+        }.stateIn(scope, SharingStarted.Eagerly, LibraryAccess.PairingRequired)
+    internal val library =
+        LibraryApplicationGraph(
+            liveRepository = AuthorizedLibraryRepository(KtorPlatformLibraryApi(client), authorizedRequests),
+            access = libraryAccess,
+            scope = scope,
+        )
     private val submission =
         CaptureSubmissionCoordinator(
             queue = queue,
@@ -184,6 +211,16 @@ class IosApplicationController(
     internal val operationListStore = OperationListStore(operationRepository, scope)
     internal var activeDetailStore: OperationDetailStore? = null
     internal var sceneActive = true
+    internal val libraryRoute = MutableStateFlow<ContentRouteResult?>(null)
+
+    fun acceptLibraryLink(value: String): Boolean {
+        val parsed = ContentRouteTable.parse(value)
+        if (parsed !is ContentRouteResult.Accepted) return false
+        libraryRoute.value = parsed
+        return true
+    }
+
+    fun pendingLibraryRouteId(): String? = libraryRoute.value?.routeIdOrNull()
 
     fun start() {
         scope.launch {

@@ -9,7 +9,8 @@
 > native `ACTION_SEND` intake, shared Compose staging/status UI, WorkManager submission, and
 > privacy-safe operation notifications. iOS URL/text sharing now has a minimal native Share
 > Extension, atomic App Group handoff, shared Compose confirmation/status, and Room queue
-> submission. File uploads are not implemented yet.
+> submission. Live recent analyses/read-state plus an explicitly unsynchronized contract-fixture
+> reader/curation preview are available in shared Compose. File uploads are not implemented yet.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -211,21 +212,24 @@ Failed — retry available
 
 The operation contract, not a client-side timer, determines completion. Partial success remains visible; for example, a GitHub repository may be starred while list filing or backup enrollment has a warning.
 
-## Library and search
+## Library and readers
 
-The full client may expose:
+The paired shared Compose client lists recent analyses through Platform `GET /v1/library/search`
+and replaces read state through the generated owner-scoped resource. Platform order is preserved;
+the client does not synthesize recency. Missing capabilities, offline, re-pairing, empty, mutation,
+and uncertain-outcome states remain visible.
 
-- recent captures and operations;
-- article reader;
-- repository catalog and backup status;
-- social-source timeline;
-- ChatGPT and Claude projects/conversations;
-- full-text and semantic search;
-- tags and local collections;
-- provider connection status;
-- incomplete archive or backup warnings.
+The public contract does not yet expose full analysis content, favorite, note, collection, tag,
+social-reader, or AI-archive-reader resources. Ratatoskr therefore exposes those interactions only
+inside a clearly labelled contract-fixture preview. Fixture state resets when the process restarts
+and never sends a Platform request. Article blocks render as inert Compose text with provenance and
+warnings; Instagram/Threads fixtures do not claim native Saved authority, and AI archive fixtures
+retain supplied import-completeness facts.
 
-Search and result access are always scoped by the authenticated user and the public Platform API. The app does not cache provider secrets or bypass server-side authorization.
+Native shells accept only the strict custom-scheme table documented in OpenSpec. Route payloads are
+opaque canonical UUIDs; query strings, fragments, credentials, percent encoding, traversal, unknown
+providers, and extra segments are rejected before repository access. Search beyond the blank-query
+recent page, universal links, and durable local library caching remain future work.
 
 ## Authentication and device identity
 
@@ -314,6 +318,8 @@ Current coverage includes:
 - current-schema Room close/reopen tests on Android Emulator and iOS Simulator;
 - Android Share Target parsing/staging, durable WorkManager submission, operation list/detail,
   notification/deep-link, and deterministic API 35 emulator smoke tests;
+- generated library transport, capability/UDF, fixture curation, inert reader, exact route-table,
+  Android shared Compose/deep-link, and iOS shared/hosted routing tests;
 - deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
   generated output;
 - shell/ADR/CI parity tests;
@@ -323,7 +329,6 @@ Current coverage includes:
 
 Later feature coverage will add:
 
-- iOS SwiftUI and Share Extension tests;
 - physical-device Android share/background lifecycle and live Platform scenarios;
 - large attachment and expired URI fixtures;
 - operation-progress contract tests;
@@ -363,11 +368,12 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan items 1 through 4 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+Plan items 1 through 6 are implemented at repository level: Android/iOS shells, the shared/native ADR,
 pinned generated Platform models, device pairing/session behavior, native secure storage,
 capability discovery, bounded capture/queue models, Room KMP persistence, Android URL share intake,
-offline submission, operation status, generic notifications, and lint/test/build CI exist. Evidence
+offline submission, iOS Share Extension handoff, operation status, generic notifications, live
+recent/read-state library access, strict content routing, fixture readers/curation, and lint/test/build CI exist. Evidence
 covers deterministic transport and queue tests, Android Emulator Keystore/Room/share smoke,
 app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not prove live
-Platform pairing/submission, a physical-device run, signing/provisioning, provider integration, iOS
-sharing, physical-device queue protection, or staged-file lifecycle.
+Platform pairing/submission or full reader/curation, a physical-device run, signing/provisioning,
+provider integration, universal links, physical-device queue protection, or staged-file lifecycle.

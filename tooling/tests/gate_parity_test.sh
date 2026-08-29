@@ -38,6 +38,7 @@ required_commands=(
     './gradlew --no-daemon ktlintCheck'
     './tooling/contracts/check.sh'
     './tooling/tests/contract_drift_test.sh'
+    './tooling/tests/platform_library_contract_test.sh'
     ':androidApp:assembleDebug'
     ':shared:connectedDebugAndroidTest'
     'swift format lint --recursive --strict iosApp'
@@ -60,6 +61,8 @@ android_share_gate_markers=(
     'OperationStatusUiTest'
     'CaptureStatusNotificationTest'
     'AndroidShareSmokeTest'
+    'LibraryDeepLinkIntentTest'
+    'LibraryUiTest'
     'android-share-test-reports'
 )
 
@@ -77,6 +80,7 @@ ios_share_gate_markers=(
     'IosSubmissionSchedulerTests'
     'IosSubmissionStatusFlowTests'
     'IosShareSmokeTests'
+    'IosLibraryRoutingTests'
     'RatatoskrShare.appex'
     'ios-share-test-results'
 )
@@ -86,12 +90,26 @@ for marker in "${ios_share_gate_markers[@]}"; do
     assert_in_file "$workflow" "$marker" "ci_runs_ios_share_status_and_smoke"
 done
 
+library_gate_markers=(
+    'PlatformLibraryApiTest'
+    'LibraryListStoreTest'
+    'FixtureUserContentRepositoryTest'
+    'LibraryReaderStoreTest'
+    'ContentRouteTableTest'
+)
+
+for marker in "${library_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_library_contract_and_state_tests"
+    assert_in_file "$workflow" "$marker" "ci_runs_library_contract_and_state_tests"
+done
+
 if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_shared_tests"
     echo "ok - documented_gate_matches_ci"
     echo "ok - ci_runs_capture_queue_current_schema_tests"
     echo "ok - ci_runs_android_share_status_and_smoke"
     echo "ok - ci_runs_ios_share_status_and_smoke"
+    echo "ok - ci_runs_library_contract_and_state_tests"
 fi
 
 exit "$failures"
