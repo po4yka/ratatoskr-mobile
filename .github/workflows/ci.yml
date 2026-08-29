@@ -70,14 +70,30 @@ jobs:
       - name: Shared Android tests including CaptureQueueIdempotencyTest and Android build
         run: ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
 
-      - name: Android Keystore and AndroidCaptureQueuePersistenceTest instrumentation
+      - name: >-
+          Android Keystore, AndroidCaptureQueuePersistenceTest, AndroidShareIntentParserTest,
+          ShareStagingUiTest, CaptureSubmissionWorkerTest, OperationStatusUiTest,
+          CaptureStatusNotificationTest, and AndroidShareSmokeTest instrumentation
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: ./gradlew --no-daemon :shared:connectedDebugAndroidTest
+          script: >-
+            ./gradlew --no-daemon
+            :shared:connectedDebugAndroidTest
+            :androidApp:connectedDebugAndroidTest
+
+      - name: Retain synthetic Android share test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-share-test-reports
+          if-no-files-found: error
+          path: |
+            androidApp/build/reports/androidTests/connected/
+            androidApp/build/outputs/androidTest-results/connected/
 
       - name: Strict OpenSpec validation
         run: |

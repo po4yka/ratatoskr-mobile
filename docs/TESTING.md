@@ -45,6 +45,27 @@ Native secret-storage runtime evidence is intentionally app-hosted:
 These tests use synthetic credentials and a mocked Platform transport. They do not prove a live
 Platform deployment or physical-device behavior.
 
+## Android Share Target and operation gate
+
+`:androidApp:connectedDebugAndroidTest` runs the app-owned instrumentation suites on an API 35
+emulator:
+
+- `AndroidShareIntentParserTest` covers URL placement plus unsupported, ambiguous, malformed,
+  oversized, and non-share input;
+- `ShareStagingUiTest` covers preview, paired/unpaired confirmation, cancellation, and one-shot
+  durable enqueue;
+- `CaptureSubmissionWorkerTest` covers network constraints, persisted delay, Room close/reopen,
+  stable work input, and revoked-session behavior without an OS retry storm;
+- `OperationStatusUiTest` renders generated running/partial/failed/completed fixtures and actionable
+  offline/reauth states;
+- `CaptureStatusNotificationTest` covers generic content, immutable explicit intents, denied
+  permission, and invalid operation identifiers;
+- `AndroidShareSmokeTest` carries a synthetic URL through Activity intake, queue acceptance,
+  terminal projection, database reopen, and operation detail with a deterministic Platform fixture.
+
+CI uploads the HTML/XML output as `android-share-test-reports`. This is emulator/fixture evidence,
+not a live Platform, provider, physical-device, notification-delivery, or store-release claim.
+
 ## Test-first
 
 A change is planned before it is built, and the plan is a task list in which behaviour arrives in

@@ -148,6 +148,12 @@ class DeviceSessionManager(
         }
     }
 
+    suspend fun currentAuthorization(): IdentityResult<Authorization> =
+        mutationMutex.withLock {
+            currentCredentials?.let { IdentityResult.Success(it.authorization()) }
+                ?: IdentityResult.Failure(IdentityFailure.Unauthorized)
+        }
+
     suspend fun refreshCapabilities(): IdentityResult<CapabilityDocument> =
         mutationMutex.withLock {
             val existing =

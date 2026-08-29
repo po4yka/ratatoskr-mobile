@@ -30,7 +30,8 @@ android_shell_hosts_shared_compose() {
   assert_file "$test_name" "shared/src/commonMain/kotlin/com/ratatoskr/mobile/App.kt"
   assert_file "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt"
   assert_contains "$test_name" "settings.gradle.kts" 'include(":shared", ":androidApp")'
-  assert_contains "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt" "RatatoskrApp(sessionManager)"
+  assert_contains "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt" "RatatoskrApp("
+  assert_contains "$test_name" "androidApp/src/main/kotlin/com/ratatoskr/mobile/MainActivity.kt" "sessionManager = container.sessions"
 
   printf 'ok - %s\n' "$test_name"
 }

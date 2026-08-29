@@ -42,6 +42,31 @@ done
 
 printf 'ok - %s\n' "$test_name"
 
+test_name="adr_0002_records_android_share_lifecycle_boundary"
+android_share_adr="$repo_root/docs/adr/0002-android-share-target.md"
+[[ -f "$android_share_adr" ]] || fail "ADR-0002 is absent"
+
+android_share_terms=(
+  "Status: Accepted"
+  "ACTION_SEND"
+  "text/plain"
+  "Android Activity"
+  "shared Compose"
+  "CaptureQueue"
+  "WorkManager"
+  "Platform public API"
+  "operation UUID"
+  "bounded polling"
+  "deep link"
+  "notification"
+)
+
+for term in "${android_share_terms[@]}"; do
+  grep -Fq "$term" "$android_share_adr" || fail "ADR-0002 does not record: $term"
+done
+
+printf 'ok - %s\n' "$test_name"
+
 test_name="adr_0004_records_current_schema_and_queue_semantics"
 queue_adr="$repo_root/docs/adr/0004-durable-offline-capture-queue.md"
 [[ -f "$queue_adr" ]] || fail "ADR-0004 is absent"

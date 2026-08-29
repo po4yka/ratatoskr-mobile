@@ -15,8 +15,13 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,20 +30,94 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavKey
 import com.ratatoskr.mobile.identity.DeviceIdentityAction
 import com.ratatoskr.mobile.identity.DeviceIdentityUiState
 import com.ratatoskr.mobile.identity.DeviceIdentityViewModel
 import com.ratatoskr.mobile.identity.DeviceSessionManager
 import com.ratatoskr.mobile.identity.IdentityFailure
+import com.ratatoskr.mobile.operation.OperationDetailRoute
+import com.ratatoskr.mobile.operation.OperationDetailStore
+import com.ratatoskr.mobile.operation.OperationDetailSurface
+import com.ratatoskr.mobile.operation.OperationListRoute
+import com.ratatoskr.mobile.operation.OperationListStore
+import com.ratatoskr.mobile.operation.OperationListSurface
+import com.ratatoskr.mobile.share.ShareIntakeRejection
+import com.ratatoskr.mobile.share.ShareRejectionSurface
+import com.ratatoskr.mobile.share.ShareStagingStore
+import com.ratatoskr.mobile.share.ShareStagingSurface
 
 @Composable
 @Suppress("ktlint:standard:function-naming")
-fun RatatoskrApp(sessionManager: DeviceSessionManager) {
+fun RatatoskrApp(
+    sessionManager: DeviceSessionManager,
+    shareStore: ShareStagingStore? = null,
+    shareRejection: ShareIntakeRejection? = null,
+    onDismissShareRejection: () -> Unit = {},
+    operationListStore: OperationListStore? = null,
+    initialOperationId: String? = null,
+    operationDetailStore: ((String) -> OperationDetailStore)? = null,
+    detailPollingVisible: Boolean = true,
+    onDetailStoreActive: (OperationDetailStore?) -> Unit = {},
+) {
     val identityViewModel = viewModel { DeviceIdentityViewModel(sessionManager) }
     val state by identityViewModel.uiState.collectAsState()
+    var route: NavKey? by remember(initialOperationId) {
+        mutableStateOf(initialOperationId?.let(::OperationDetailRoute))
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        IdentitySurface(state, identityViewModel::dispatch)
+        if (shareStore != null) {
+            val stagingState by shareStore.state.collectAsState()
+            ShareStagingSurface(stagingState, shareStore::dispatch)
+        } else if (shareRejection != null) {
+            ShareRejectionSurface(shareRejection, onDismissShareRejection)
+        } else {
+            when (val currentRoute = route) {
+                OperationListRoute -> {
+                    val store = operationListStore
+                    if (store == null) {
+                        IdentitySurface(state, identityViewModel::dispatch) { route = OperationListRoute }
+                    } else {
+                        val operations by store.state.collectAsState()
+                        LaunchedEffect(store) { store.refresh() }
+                        OperationListSurface(
+                            state = operations,
+                            onRefresh = store::refresh,
+                            onOpen = { route = OperationDetailRoute(it) },
+                        )
+                    }
+                }
+                is OperationDetailRoute -> {
+                    val store =
+                        remember(currentRoute.operationId) {
+                            operationDetailStore?.invoke(currentRoute.operationId)
+                        }
+                    if (store == null) {
+                        IdentitySurface(state, identityViewModel::dispatch) { route = OperationListRoute }
+                    } else {
+                        val detail by store.state.collectAsState()
+                        DisposableEffect(store) {
+                            onDetailStoreActive(store)
+                            onDispose {
+                                store.setVisible(false)
+                                onDetailStoreActive(null)
+                            }
+                        }
+                        DisposableEffect(store, detailPollingVisible) {
+                            store.setVisible(detailPollingVisible)
+                            onDispose { store.setVisible(false) }
+                        }
+                        OperationDetailSurface(
+                            state = detail,
+                            onRetry = store::retry,
+                            onPair = { route = null },
+                        )
+                    }
+                }
+                else -> IdentitySurface(state, identityViewModel::dispatch) { route = OperationListRoute }
+            }
+        }
     }
 }
 
@@ -47,6 +126,7 @@ fun RatatoskrApp(sessionManager: DeviceSessionManager) {
 private fun IdentitySurface(
     state: DeviceIdentityUiState,
     dispatch: (DeviceIdentityAction) -> Unit,
+    onOpenOperations: () -> Unit = {},
 ) {
     Column(
         modifier =
@@ -61,7 +141,7 @@ private fun IdentitySurface(
         when (state) {
             is DeviceIdentityUiState.PairingForm -> PairingForm(state, dispatch)
             DeviceIdentityUiState.Working -> BasicText("Working…")
-            is DeviceIdentityUiState.Paired -> PairedSession(state, dispatch)
+            is DeviceIdentityUiState.Paired -> PairedSession(state, dispatch, onOpenOperations)
             DeviceIdentityUiState.RePairingRequired -> {
                 BasicText("This device session was revoked. Pair it again to continue.")
                 ActionButton("Pair again") { dispatch(DeviceIdentityAction.SignOut) }
@@ -107,6 +187,7 @@ private fun PairingForm(
 private fun PairedSession(
     state: DeviceIdentityUiState.Paired,
     dispatch: (DeviceIdentityAction) -> Unit,
+    onOpenOperations: () -> Unit,
 ) {
     BasicText("Paired with ${state.origin}")
     BasicText(if (state.capabilitiesFresh) "Capabilities are current" else "Capabilities are unavailable or stale")
@@ -114,6 +195,7 @@ private fun PairedSession(
         BasicText(state.capabilities.sorted().joinToString(separator = "\n"))
     }
     ActionButton("Refresh capabilities") { dispatch(DeviceIdentityAction.RefreshCapabilities) }
+    ActionButton("Operations", onClick = onOpenOperations)
     ActionButton("Sign out on this device") { dispatch(DeviceIdentityAction.SignOut) }
 }
 

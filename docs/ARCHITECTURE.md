@@ -1,6 +1,7 @@
 # Ratatoskr Mobile Architecture
 
-> Status: target architecture. This repository is in architecture bootstrap; the document defines the intended Android, iOS, KMP, Share Extension, persistence, and security boundaries.
+> Status: evolving architecture. Plan items 1-4 are implemented; iOS sharing and file staging remain
+> target architecture.
 
 ## 1. Purpose
 
@@ -117,7 +118,7 @@ platform lifecycle or security differences behind an overly broad abstraction.
 
 ```text
 Presentation
-  native screens, navigation, share UI, notifications
+  shared Compose screens/navigation/UDF, native notification and lifecycle adapters
 
 Application
   capture orchestration, queue commands, operation tracking
@@ -196,17 +197,18 @@ Text is size-limited, stored as explicit user content, and can include source-ap
 
 ### 7.1. Android Share Target
 
-The Android entrypoint handles:
+ADR-0002 implements the Android URL slice. The Android entrypoint handles:
 
-- `ACTION_SEND` and selected `ACTION_SEND_MULTIPLE` types;
-- `text/plain` URLs/text;
-- content URIs with temporary permission;
-- safe MIME and size checks;
-- immediate staging to app-controlled storage when needed;
-- creation of a durable queue draft;
-- launch of a compact confirmation UI or background enqueue according to user setting.
+- `ACTION_SEND text/plain` only;
+- exactly one bounded `http` or `https` URL found anywhere in the shared text;
+- hostile scheme, multiple-URL, oversized, missing, and unsupported-text refusal;
+- shared Compose preview and explicit confirmation;
+- fail-closed, reactive `content.submit` capability gating;
+- durable queue creation before content-free WorkManager scheduling;
+- operation list/detail, generic notification, and validated operation-UUID routing.
 
-Content URIs are hostile and may become inaccessible after the share flow. The app does not retain external URI permissions indefinitely without need.
+`ACTION_SEND_MULTIPLE`, content URIs, files, PDFs, notes, and tags are not claimed by this slice.
+Their permission/staging behavior remains future work under the staged-file plan item.
 
 ### 7.2. iOS Share Extension
 
@@ -401,14 +403,18 @@ A remembered default may choose `metadata` or `track`, but must not silently cho
 
 ## 15. Operation tracking
 
-The app stores operation references and terminal results.
+The app stores operation references and monotonic terminal results through the durable queue.
 
 Active tracking:
 
-- SSE while foregrounded when supported;
-- polling fallback;
-- background refresh through OS scheduler;
-- push/local notification on completion when configured.
+- bounded foreground polling while a detail screen is visible;
+- explicit cancellation whenever the Android host leaves `RESUMED`;
+- immediate stop at terminal state and a three-failure cap with explicit retry;
+- coalesced background refresh through WorkManager;
+- generic local notification on accepted/terminal transitions when permission permits.
+
+SSE is not present in the pinned Platform contract and is not claimed. The list uses the public
+cursor contract, and detail fetches are authenticated and owner-scoped by Platform.
 
 The local queue does not mark an item complete on `202 Accepted`.
 
@@ -459,7 +465,10 @@ Deep links carry opaque IDs, not sensitive content or provider tokens. The app r
 
 ### Android
 
-Use WorkManager for durable deferrable submission/upload/tracking. Foreground service is reserved for user-visible long uploads that meet platform requirements.
+The implemented URL flow uses unique WorkManager work with connected-network constraints and a
+content-free request. The worker drains bounded durable queue work, schedules the next persisted
+eligibility time, and returns OS success on auth-required state to avoid a retry storm. Foreground
+service and upload work remain future file-slice concerns.
 
 ### iOS
 
@@ -485,6 +494,8 @@ Notifications may report:
 - overdue export backup when the feature is enabled.
 
 Notification content is privacy-sensitive and configurable. Lock-screen previews avoid private titles/text by default.
+The current Android adapter uses a generic Ratatoskr title/outcome only and an immutable explicit
+intent containing one operation UUID. Capture content is never embedded.
 
 ## 20. Local persistence
 

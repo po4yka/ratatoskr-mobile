@@ -18,6 +18,9 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
 - **Revoked authorization:** refusal of both refresh and device-root recovery clears local
   credentials and current-session capabilities before exposing re-pairing.
 - **Deep-link spoof/replay:** allowlisted HTTPS/app routes, opaque one-time intents where needed, authenticated server state.
+- **Android intent injection:** export only the documented `ACTION_SEND text/plain` surface; bound
+  payload bytes; accept exactly one HTTP(S) URL; route internal status intents explicitly and
+  validate the canonical operation UUID before any authenticated fetch.
 - **Duplicate/external write surprise:** idempotency plus explicit mode/confirmation and truthful partial results.
 - **Duplicate submission after crash:** persist one idempotency key before work, recover expired
   leases, reject stale claim tokens, converge on the same Platform operation, and fail closed if one
@@ -28,6 +31,9 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
   CompleteUntilFirstUserAuthentication protection for the queue database and sidecars; minimal
   projection/error data; screenshot/notification privacy and safe logout/wipe in their owning work.
 - **Background abuse/battery drain:** OS schedulers, constraints, backoff, user-visible controls.
+- **Private lock-screen disclosure:** Android notifications use generic outcome text and an opaque
+  operation UUID only; URLs, titles, notes, tokens, and server result bodies never enter the
+  notification, PendingIntent, WorkManager input, or diagnostic labels.
 - **Supply-chain/release compromise:** pinned dependencies, signing, provenance, store/release verification.
 
 Re-review for biometric gates, media preview/rendering, local search embeddings, widgets, cross-device sync, or additional share file types.

@@ -1,13 +1,15 @@
 # Developing Ratatoskr Mobile
 
-> Status: Architecture bootstrap
-> Last reviewed: 2026-08-28
+> Status: Android URL Share Target implemented
+> Last reviewed: 2026-08-29
 
 The repository contains buildable Android and iOS application shells around one shared Compose
 Multiplatform root. Device pairing, rotating device sessions, native secure credential storage,
 and session-scoped Platform capability discovery are implemented. Shared URL, text-note, and
-staged-file-reference models plus the durable Room capture queue are implemented; share targets,
-submission workers, and feature UI are not.
+staged-file-reference models plus the durable Room capture queue are implemented. Android
+`ACTION_SEND text/plain` URL intake, shared Compose staging/status UI, WorkManager submission,
+generic notifications, and validated operation-detail routing are implemented. iOS sharing and file
+uploads are not.
 
 ## Toolchain
 
@@ -38,6 +40,7 @@ build-gate -- ./tooling/contracts/check.sh
 build-gate -- ./tooling/tests/contract_drift_test.sh
 build-gate -- ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
 build-gate -- ./gradlew --no-daemon :shared:connectedDebugAndroidTest
+build-gate -- ./gradlew --no-daemon :androidApp:connectedDebugAndroidTest
 
 swift format lint --recursive --strict iosApp
 build-gate -- ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
@@ -60,6 +63,13 @@ XCTest target runs the real device-only, non-synchronizing Keychain round trip. 
 Kotlin/Native Simulator test is intentionally skipped because Security returns
 `errSecNotAvailable` without an application host; it remains compile coverage, while the hosted
 XCTest is the runtime gate.
+
+Android app instrumentation covers `AndroidShareIntentParserTest`, `ShareStagingUiTest`,
+`CaptureSubmissionWorkerTest`, `OperationStatusUiTest`, `CaptureStatusNotificationTest`, and the
+end-to-end `AndroidShareSmokeTest`. The smoke uses only synthetic data and a deterministic
+operation fixture on an API 35 emulator; it proves activity/database reopen and UI wiring, not a
+live Platform deployment or physical device. Hosted CI retains the report as the
+`android-share-test-reports` artifact.
 
 ## Capture queue gate
 

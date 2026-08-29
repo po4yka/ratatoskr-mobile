@@ -37,6 +37,7 @@ enum class QueueFailure {
     Policy,
     Size,
     LocalFile,
+    InvalidResponse,
 }
 
 @Serializable
@@ -286,6 +287,45 @@ class CaptureQueue(
             persistence.transaction { records().firstOrNull { it.localId == localId } }
         }
 
+    suspend fun pendingSubmissions(
+        owner: CaptureOwner,
+        limit: Int = 8,
+    ): List<QueueRecord> =
+        mutex.withLock {
+            if (limit <= 0) return@withLock emptyList()
+            persistence.transaction {
+                records()
+                    .ownerLaneHeads(owner)
+                    .filter { it.submissionWakeAt() != null }
+                    .sortedWith(workOrder)
+                    .take(limit)
+            }
+        }
+
+    suspend fun pendingOperationRefreshes(
+        owner: CaptureOwner,
+        limit: Int = 8,
+    ): List<QueueRecord> =
+        mutex.withLock {
+            if (limit <= 0) return@withLock emptyList()
+            persistence.transaction {
+                records()
+                    .asSequence()
+                    .filter { it.request.owner == owner }
+                    .filter { it.state == QueueState.Accepted || it.state == QueueState.Tracking }
+                    .sortedWith(workOrder)
+                    .take(limit)
+                    .toList()
+            }
+        }
+
+    suspend fun nextWakeAt(owner: CaptureOwner): Instant? =
+        mutex.withLock {
+            persistence.transaction {
+                records().ownerLaneHeads(owner).mapNotNull { it.submissionWakeAt() }.minOrNull()
+            }
+        }
+
     suspend fun claimReady(
         owner: CaptureOwner,
         leaseDuration: Duration,
@@ -440,6 +480,27 @@ class CaptureQueue(
 
     fun close() = persistence.close()
 }
+
+private fun List<QueueRecord>.ownerLaneHeads(owner: CaptureOwner): List<QueueRecord> =
+    asSequence()
+        .filter { it.request.owner == owner && !it.state.isTerminalQueueState() }
+        .groupBy { it.request.source }
+        .values
+        .mapNotNull { lane -> lane.minByOrNull { it.sourceSequence } }
+
+private fun QueueRecord.submissionWakeAt(): Instant? =
+    when (state) {
+        QueueState.Queued,
+        QueueState.RetryWait,
+        -> nextEligibleAt
+        QueueState.InFlight -> leaseExpiresAt
+        else -> null
+    }
+
+private val workOrder =
+    compareBy<QueueRecord> { it.nextEligibleAt }
+        .thenBy { it.request.createdAt }
+        .thenBy { it.localId }
 
 private fun QueueRecord.isReadyAt(now: Instant): Boolean =
     when (state) {

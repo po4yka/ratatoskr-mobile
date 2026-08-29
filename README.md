@@ -5,8 +5,9 @@
 > **Status:** architecture bootstrap. Buildable Android and iOS application shells host a shared
 > Compose Multiplatform pairing surface. Generated public Platform types back the implemented
 > device-pairing, rotating-session, revocation, and capability-discovery client, plus shared
-> capture models, durable queue persistence, and operation projection. Share targets/extensions,
-> submission workers, and feature UI are not implemented yet.
+> capture models, durable queue persistence, and operation projection. Android URL sharing now has
+> native `ACTION_SEND` intake, shared Compose staging/status UI, WorkManager submission, and
+> privacy-safe operation notifications. iOS sharing and file uploads are not implemented yet.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -59,6 +60,7 @@ ratatoskr-mobile/
 ADR-0001 chooses shared Compose presentation, public API models/client adapters, and capture-queue
 rules inside KMP. Thin native shells retain application/share lifecycle, secure storage, background
 scheduling, file access, notifications, permissions, and platform accessibility integration.
+ADR-0002 applies that boundary to Android URL sharing and operation status.
 
 ## Capture contract
 
@@ -80,26 +82,23 @@ The app may provide lightweight client metadata, but server-side services remain
 
 ## Android Share Target
 
-The Android app registers supported share intents, initially including:
+The Android app currently registers one supported share intent:
 
 ```text
 ACTION_SEND text/plain
-ACTION_SEND application/pdf
-ACTION_SEND selected image/file types
 ```
 
-The Share Target should:
+The implemented Share Target:
 
-1. parse the incoming intent defensively;
-2. create a local capture record immediately;
-3. present a compact confirmation UI;
-4. allow note, collection, tag, and processing-policy selection;
-5. persist the item before network work;
-6. enqueue upload through a lifecycle-safe background mechanism;
-7. finish quickly without blocking the source app;
-8. make retry and failure state visible in the main app.
+1. accepts exactly one bounded `http`/`https` URL and rejects unsupported or ambiguous payloads;
+2. preserves the original shared text for preview without treating it as server content;
+3. presents shared Compose confirmation and persists the capture before scheduling network work;
+4. submits from durable state through connected WorkManager work with the stable idempotency key;
+5. persists the Platform operation ID and shows bounded-polling list/detail status;
+6. routes generic notifications to a validated operation UUID without private content.
 
-Content URIs are copied or streamed only with the granted permission and are never assumed to remain readable after the share activity closes.
+Notes, tags, files, PDFs, `content://` values, and `ACTION_SEND_MULTIPLE` remain unsupported in this
+slice because their contract and staging lifecycle belong to later plan items.
 
 ## iOS Share Extension
 
@@ -310,6 +309,8 @@ Current coverage includes:
 - bounded capture-model, queue idempotency/FIFO/lease/retry/resolution, and monotonic operation
   projection tests on Android/JVM and iOS Simulator targets;
 - current-schema Room close/reopen tests on Android Emulator and iOS Simulator;
+- Android Share Target parsing/staging, durable WorkManager submission, operation list/detail,
+  notification/deep-link, and deterministic API 35 emulator smoke tests;
 - deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
   generated output;
 - shell/ADR/CI parity tests;
@@ -319,9 +320,8 @@ Current coverage includes:
 
 Later feature coverage will add:
 
-- Android Compose/UI and Share Target tests;
 - iOS SwiftUI and Share Extension tests;
-- offline/reconnect scenarios;
+- physical-device Android share/background lifecycle and live Platform scenarios;
 - large attachment and expired URI fixtures;
 - operation-progress contract tests;
 - screenshot/accessibility tests;
@@ -360,10 +360,11 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan items 1 through 3 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+Plan items 1 through 4 are implemented at repository level: Android/iOS shells, the shared/native ADR,
 pinned generated Platform models, device pairing/session behavior, native secure storage,
-capability discovery, bounded capture/queue models, Room KMP persistence, operation projection, and
-lint/test/build CI exist. Evidence covers deterministic transport and queue tests, Android Emulator
-Keystore/Room, app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not
-prove live Platform pairing, a physical-device run, signing/provisioning, provider integration,
-share intake/submission, physical-device queue protection, or staged-file lifecycle.
+capability discovery, bounded capture/queue models, Room KMP persistence, Android URL share intake,
+offline submission, operation status, generic notifications, and lint/test/build CI exist. Evidence
+covers deterministic transport and queue tests, Android Emulator Keystore/Room/share smoke,
+app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not prove live
+Platform pairing/submission, a physical-device run, signing/provisioning, provider integration, iOS
+sharing, physical-device queue protection, or staged-file lifecycle.

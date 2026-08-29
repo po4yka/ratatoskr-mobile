@@ -10,4 +10,7 @@
 - `IMPLEMENTATION_PLAN.md` — ordered mobile vertical slices.
 - `adr/README.md` — decision process.
 
+Implemented architecture decisions include the shared KMP boundary, Android URL Share Target
+lifecycle/status boundary, durable Room queue, and native secure device authentication.
+
 Root: `README.md`, `AGENTS.md`, `DEVELOPMENT.md`, `SECURITY.md`.

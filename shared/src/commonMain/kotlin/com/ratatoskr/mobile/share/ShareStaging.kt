@@ -1,0 +1,156 @@
+package com.ratatoskr.mobile.share
+
+import com.ratatoskr.mobile.capture.CaptureOwner
+import com.ratatoskr.mobile.capture.CapturePayload
+import com.ratatoskr.mobile.capture.CaptureRequest
+import com.ratatoskr.mobile.capture.CaptureSource
+import com.ratatoskr.mobile.queue.CaptureQueue
+import com.ratatoskr.mobile.queue.QueueClock
+import com.ratatoskr.mobile.queue.QueueResult
+import com.ratatoskr.mobile.submission.SubmissionScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+
+fun interface CurrentCaptureOwner {
+    fun get(): CaptureOwner?
+}
+
+enum class ShareSubmissionAccess {
+    Available,
+    PairingRequired,
+    CapabilityUnavailable,
+}
+
+sealed interface ShareStagingState {
+    data class Ready(
+        val originalText: String,
+        val url: String?,
+        val canSubmit: Boolean,
+        val message: String?,
+    ) : ShareStagingState
+
+    data object Saving : ShareStagingState
+
+    data class Queued(
+        val localId: String,
+        val message: String,
+    ) : ShareStagingState
+
+    data object Cancelled : ShareStagingState
+
+    data class Failed(
+        val message: String,
+    ) : ShareStagingState
+}
+
+sealed interface ShareStagingAction {
+    data object Confirm : ShareStagingAction
+
+    data object Cancel : ShareStagingAction
+}
+
+class ShareStagingStore(
+    private val initialIntake: ShareIntake,
+    private val owner: CurrentCaptureOwner,
+    private val queue: CaptureQueue,
+    private val scheduler: SubmissionScheduler,
+    private val clock: QueueClock,
+    private val scope: CoroutineScope,
+    private val submissionAccess: StateFlow<ShareSubmissionAccess> =
+        MutableStateFlow(ShareSubmissionAccess.Available),
+) {
+    private val mutableState =
+        MutableStateFlow<ShareStagingState>(initialIntake.readyState(submissionAccess.value))
+    val state: StateFlow<ShareStagingState> = mutableState.asStateFlow()
+    private val submissionAccessJob =
+        scope.launch {
+            submissionAccess.collectLatest { access ->
+                if (mutableState.value is ShareStagingState.Ready) {
+                    mutableState.value = initialIntake.readyState(access)
+                }
+            }
+        }
+
+    fun close() = submissionAccessJob.cancel()
+
+    fun dispatch(action: ShareStagingAction) {
+        when (action) {
+            ShareStagingAction.Cancel -> {
+                if (mutableState.value is ShareStagingState.Ready) {
+                    mutableState.value = ShareStagingState.Cancelled
+                }
+            }
+            ShareStagingAction.Confirm -> confirm()
+        }
+    }
+
+    private fun confirm() {
+        val ready = mutableState.value as? ShareStagingState.Ready ?: return
+        val url = ready.url ?: return
+        val access = submissionAccess.value
+        if (!ready.canSubmit || access != ShareSubmissionAccess.Available) {
+            mutableState.value = initialIntake.readyState(access)
+            return
+        }
+        val currentOwner = owner.get()
+        if (currentOwner == null) {
+            mutableState.value = ShareStagingState.Failed("Pair this device before submitting.")
+            return
+        }
+        mutableState.value = ShareStagingState.Saving
+        scope.launch {
+            when (
+                val result =
+                    queue.enqueue(
+                        CaptureRequest(
+                            owner = currentOwner,
+                            source = CaptureSource.AndroidShareTarget,
+                            payload = CapturePayload.Url(url),
+                            createdAt = clock.now(),
+                        ),
+                    )
+            ) {
+                is QueueResult.Failure ->
+                    mutableState.value = ShareStagingState.Failed("The capture could not be queued safely.")
+                is QueueResult.Success -> {
+                    mutableState.value =
+                        ShareStagingState.Queued(
+                            localId = result.value.localId,
+                            message = "Safely queued. Ratatoskr will submit it when online.",
+                        )
+                    runCatching { scheduler.schedule(result.value.nextEligibleAt) }
+                }
+            }
+        }
+    }
+
+    private fun ShareIntake.readyState(access: ShareSubmissionAccess): ShareStagingState.Ready =
+        when (this) {
+            is ShareIntake.Url ->
+                ShareStagingState.Ready(
+                    originalText = originalText,
+                    url = url,
+                    canSubmit = access == ShareSubmissionAccess.Available,
+                    message = access.message(),
+                )
+            is ShareIntake.UnsupportedText ->
+                ShareStagingState.Ready(
+                    originalText = originalText,
+                    url = null,
+                    canSubmit = false,
+                    message = "Platform does not currently accept plain text captures.",
+                )
+        }
+
+    private fun ShareSubmissionAccess.message(): String? =
+        when (this) {
+            ShareSubmissionAccess.Available -> null
+            ShareSubmissionAccess.PairingRequired -> "Pair this device before submitting."
+            ShareSubmissionAccess.CapabilityUnavailable ->
+                "URL capture is unavailable for this Platform session."
+        }
+}
