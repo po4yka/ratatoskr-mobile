@@ -1,0 +1,9 @@
+{
+  "target": {
+    "github_repository_numeric_id": 0,
+    "repository_full_name": "owner/repository",
+    "canonical_url": "https://github.com/owner/repository"
+  },
+  "stargazer_count": 0,
+  "available_actions": ["metadata"]
+}

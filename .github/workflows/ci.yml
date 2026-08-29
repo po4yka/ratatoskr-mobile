@@ -38,7 +38,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json', 'contracts/github/ratatoskr-contracts.lock.json') }}
 
       - name: Install Android SDK platform
         run: |
@@ -58,6 +58,7 @@ jobs:
           ./tooling/tests/architecture_boundary_test.sh
           ./tooling/tests/gate_parity_test.sh
           ./tooling/tests/platform_library_contract_test.sh
+          ./tooling/tests/github_contract_fixture_test.sh
 
       - name: Kotlin lint
         run: ./gradlew --no-daemon ktlintCheck
@@ -71,14 +72,16 @@ jobs:
       - name: >-
           Shared Android tests including CaptureQueueIdempotencyTest, PlatformLibraryApiTest,
           LibraryListStoreTest, FixtureUserContentRepositoryTest, LibraryReaderStoreTest,
-          ContentRouteTableTest, and Android build
+          ContentRouteTableTest, GithubContractCodecTest, PlatformGithubApiTest,
+          GithubCatalogStoreTest, GithubConfirmationStoreTest, GithubActionOutcomeStoreTest,
+          and Android build
         run: ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
 
       - name: >-
           Android Keystore, AndroidCaptureQueuePersistenceTest, AndroidShareIntentParserTest,
           ShareStagingUiTest, CaptureSubmissionWorkerTest, OperationStatusUiTest,
           CaptureStatusNotificationTest, AndroidShareSmokeTest, LibraryDeepLinkIntentTest,
-          and LibraryUiTest instrumentation
+          LibraryUiTest, and GithubCatalogUiTest instrumentation
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
@@ -131,7 +134,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.konan
-          key: apple-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json') }}
+          key: apple-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json', 'contracts/github/ratatoskr-contracts.lock.json') }}
 
       - name: Swift format and lint
         run: swift format lint --recursive --strict iosApp
@@ -139,7 +142,10 @@ jobs:
       - name: iOS Share entitlements and embedded target structure
         run: ./tooling/tests/ios_share_entitlements_test.sh
 
-      - name: Shared iOS tests including IosCaptureQueuePersistenceTest and framework
+      - name: >-
+          Shared iOS tests including IosCaptureQueuePersistenceTest,
+          github_graph_shares_device_authorization_capabilities_and_fixture_browse_without_provider_credentials,
+          and framework
         run: ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
 
       - name: >-

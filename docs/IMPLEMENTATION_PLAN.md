@@ -32,7 +32,12 @@
    Evidence covers generated-contract drift/mutation, shared Android/JVM and iOS Simulator tests,
    API 35 Compose/deep-link instrumentation, and iOS hosted routing XCTest; it is not live full
    reader/curation, provider, universal-link, physical-device, or persistence proof.
-7. Add GitHub metadata/track/star with explicit write confirmation.
+7. **Complete (2026-08-29):** add capability-gated GitHub fixture browse/search, authenticated live
+   Platform preview, metadata action, and one-shot explicit confirmation for track/star with exact
+   target/account/effect disclosure. Evidence covers pinned contract drift/mutation, common
+   codec/transport/UDF tests, API 35 shared Compose instrumentation, iOS Simulator graph/framework,
+   hosted shell tests, and unsigned shell builds; fixture browse is unsynchronized and this is not
+   live GitHub service, connected-account, provider-write, Vault-completion, or physical-device proof.
 8. Add resumable file upload, retention/cleanup, background constraints, revoke/clear-data.
 9. Add library/search/deep links/notifications, accessibility and privacy polish.
 10. Add real-device lifecycle, release signing/store profiles, and workspace integration.

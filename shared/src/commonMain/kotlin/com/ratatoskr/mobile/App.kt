@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
+import com.ratatoskr.mobile.github.GithubApplicationGraph
+import com.ratatoskr.mobile.github.GithubCatalogRoute
+import com.ratatoskr.mobile.github.GithubCatalogSurface
+import com.ratatoskr.mobile.github.GithubDetailRoute
+import com.ratatoskr.mobile.github.GithubDetailSurface
 import com.ratatoskr.mobile.identity.DeviceIdentityAction
 import com.ratatoskr.mobile.identity.DeviceIdentityUiState
 import com.ratatoskr.mobile.identity.DeviceIdentityViewModel
@@ -74,6 +79,7 @@ fun RatatoskrApp(
     detailPollingVisible: Boolean = true,
     onDetailStoreActive: (OperationDetailStore?) -> Unit = {},
     library: LibraryApplicationGraph? = null,
+    github: GithubApplicationGraph? = null,
     initialContentRoute: ContentRouteResult? = null,
 ) {
     val identityViewModel = viewModel { DeviceIdentityViewModel(sessionManager) }
@@ -93,6 +99,49 @@ fun RatatoskrApp(
             ShareRejectionSurface(shareRejection, onDismissShareRejection)
         } else {
             when (val currentRoute = route) {
+                GithubCatalogRoute -> {
+                    val graph = github
+                    if (graph == null) {
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                            onOpenLibrary = { route = LibraryListRoute },
+                        )
+                    } else {
+                        val catalog by graph.catalogStore.state.collectAsState()
+                        GithubCatalogSurface(
+                            state = catalog,
+                            onSearch = graph.catalogStore::search,
+                            onOpen = {
+                                graph.select(it)
+                                route = GithubDetailRoute
+                            },
+                            onBack = { route = null },
+                        )
+                    }
+                }
+                GithubDetailRoute -> {
+                    val graph = github
+                    if (graph == null) {
+                        IdentitySurface(
+                            state,
+                            identityViewModel::dispatch,
+                            onOpenOperations = { route = OperationListRoute },
+                            onOpenLibrary = { route = LibraryListRoute },
+                        )
+                    } else {
+                        val detail by graph.detailStore.state.collectAsState()
+                        GithubDetailSurface(
+                            state = detail,
+                            onSelect = graph.detailStore::select,
+                            onConfirm = graph.detailStore::confirm,
+                            onCancel = graph.detailStore::cancel,
+                            onRetryUncertain = graph.detailStore::retryUncertain,
+                            onBack = { route = GithubCatalogRoute },
+                        )
+                    }
+                }
                 OperationListRoute -> {
                     val store = operationListStore
                     if (store == null) {
@@ -248,6 +297,7 @@ fun RatatoskrApp(
                         identityViewModel::dispatch,
                         onOpenOperations = { route = OperationListRoute },
                         onOpenLibrary = { route = LibraryListRoute },
+                        onOpenGithub = github?.let { { route = GithubCatalogRoute } },
                     )
             }
         }
@@ -261,6 +311,7 @@ private fun IdentitySurface(
     dispatch: (DeviceIdentityAction) -> Unit,
     onOpenOperations: () -> Unit = {},
     onOpenLibrary: () -> Unit = {},
+    onOpenGithub: (() -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -275,7 +326,8 @@ private fun IdentitySurface(
         when (state) {
             is DeviceIdentityUiState.PairingForm -> PairingForm(state, dispatch)
             DeviceIdentityUiState.Working -> BasicText("Working…")
-            is DeviceIdentityUiState.Paired -> PairedSession(state, dispatch, onOpenOperations, onOpenLibrary)
+            is DeviceIdentityUiState.Paired ->
+                PairedSession(state, dispatch, onOpenOperations, onOpenLibrary, onOpenGithub)
             DeviceIdentityUiState.RePairingRequired -> {
                 BasicText("This device session was revoked. Pair it again to continue.")
                 ActionButton("Pair again") { dispatch(DeviceIdentityAction.SignOut) }
@@ -323,6 +375,7 @@ private fun PairedSession(
     dispatch: (DeviceIdentityAction) -> Unit,
     onOpenOperations: () -> Unit,
     onOpenLibrary: () -> Unit,
+    onOpenGithub: (() -> Unit)?,
 ) {
     BasicText("Paired with ${state.origin}")
     BasicText(if (state.capabilitiesFresh) "Capabilities are current" else "Capabilities are unavailable or stale")
@@ -332,6 +385,7 @@ private fun PairedSession(
     ActionButton("Refresh capabilities") { dispatch(DeviceIdentityAction.RefreshCapabilities) }
     ActionButton("Operations", onClick = onOpenOperations)
     ActionButton("Library", onClick = onOpenLibrary)
+    onOpenGithub?.let { ActionButton("GitHub repositories", onClick = it) }
     ActionButton("Sign out on this device") { dispatch(DeviceIdentityAction.SignOut) }
 }
 

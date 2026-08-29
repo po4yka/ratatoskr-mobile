@@ -2,6 +2,12 @@ package com.ratatoskr.mobile
 
 import com.ratatoskr.mobile.capture.CaptureOwner
 import com.ratatoskr.mobile.capture.CaptureSource
+import com.ratatoskr.mobile.github.AuthorizedGithubRepository
+import com.ratatoskr.mobile.github.GithubAccess
+import com.ratatoskr.mobile.github.GithubActionIdentity
+import com.ratatoskr.mobile.github.GithubActionIdentityFactory
+import com.ratatoskr.mobile.github.GithubApplicationGraph
+import com.ratatoskr.mobile.github.KtorPlatformGithubApi
 import com.ratatoskr.mobile.identity.CapabilityState
 import com.ratatoskr.mobile.identity.DeviceIdentityState
 import com.ratatoskr.mobile.identity.DeviceSessionManager
@@ -186,6 +192,28 @@ class IosApplicationController(
             liveRepository = AuthorizedLibraryRepository(KtorPlatformLibraryApi(client), authorizedRequests),
             access = libraryAccess,
             scope = scope,
+        )
+    private val githubAccess =
+        combine(sessions.state, sessions.capabilities) { identity, capabilities ->
+            val github = (capabilities as? CapabilityState.Ready)?.snapshot?.github
+            when {
+                identity !is DeviceIdentityState.Paired -> GithubAccess.PairingRequired
+                github == null -> GithubAccess.CapabilityUnavailable
+                else -> GithubAccess.Available(github)
+            }
+        }.stateIn(scope, SharingStarted.Eagerly, GithubAccess.PairingRequired)
+    internal val github =
+        GithubApplicationGraph(
+            repository = AuthorizedGithubRepository(KtorPlatformGithubApi(client), authorizedRequests),
+            access = githubAccess,
+            scope = scope,
+            identityFactory =
+                GithubActionIdentityFactory {
+                    GithubActionIdentity(
+                        confirmationEvidenceRef = "mobile-confirmation:${NSUUID.UUID().UUIDString.lowercase()}",
+                        idempotencyKey = "mobile-github-action.${NSUUID.UUID().UUIDString.lowercase()}",
+                    )
+                },
         )
     private val submission =
         CaptureSubmissionCoordinator(

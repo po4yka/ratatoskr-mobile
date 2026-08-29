@@ -6,6 +6,22 @@ repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 test_root="$(mktemp -d /tmp/ratatoskr-contract-drift-test.XXXXXX)"
 failures=0
 
+cp -R "$repository_root/contracts/github" "$test_root/mutated-github"
+jq '.description = "synthetic mutation"' \
+    "$test_root/mutated-github/fixtures/repository-preview-response/valid/repository.json" \
+    >"$test_root/mutated-github/fixtures/repository-preview-response/valid/repository.mutated.json"
+mv \
+    "$test_root/mutated-github/fixtures/repository-preview-response/valid/repository.mutated.json" \
+    "$test_root/mutated-github/fixtures/repository-preview-response/valid/repository.json"
+
+if RATATOSKR_GITHUB_CONTRACTS="$test_root/mutated-github" \
+    "$repository_root/tooling/contracts/check-github.sh" >/dev/null 2>&1; then
+    echo "not ok - mutated_github_fixture_is_rejected: valid JSON mutation was accepted"
+    failures=$((failures + 1))
+else
+    echo "ok - mutated_github_fixture_is_rejected"
+fi
+
 jq '.info.title = (.info.title + " mutation")' \
     "$repository_root/contracts/platform-openapi.json" \
     >"$test_root/mutated-openapi.json"

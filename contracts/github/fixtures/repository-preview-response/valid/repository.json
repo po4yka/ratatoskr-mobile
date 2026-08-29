@@ -1,0 +1,16 @@
+{
+  "target": {
+    "github_repository_numeric_id": 42,
+    "repository_full_name": "owner/repository",
+    "canonical_url": "https://github.com/owner/repository"
+  },
+  "description": "A small repository description.",
+  "stargazer_count": 123,
+  "primary_language": "Rust",
+  "account_ref": "github-account:018f0000-0000-7000-8000-000000000604",
+  "available_actions": [
+    "metadata",
+    "track",
+    "star"
+  ]
+}

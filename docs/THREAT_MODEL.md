@@ -31,6 +31,15 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
   payload bytes; accept exactly one HTTP(S) URL; route internal status intents explicitly and
   validate the canonical operation UUID before any authenticated fetch.
 - **Duplicate/external write surprise:** idempotency plus explicit mode/confirmation and truthful partial results.
+- **Stale/replayed GitHub consent:** bind one pending track/star confirmation to immutable target,
+  opaque account, preview actions, and current capability actions; consume before dispatch and
+  invalidate on cancellation, replacement, or context change.
+- **Provider credential exfiltration:** send GitHub operations only through paired Platform
+  `/v1/gh`; the client stores no GitHub token, makes no direct provider request, follows no redirect,
+  and renders only bounded contract-validated inert text.
+- **False backup or fixture authority:** label browse/search unsynchronized, require live preview as
+  action authority, preserve all three component outcomes, and describe accepted desired policy
+  without claiming Vault backup completion.
 - **Duplicate submission after crash:** persist one idempotency key before work, recover expired
   leases, reject stale claim tokens, converge on the same Platform operation, and fail closed if one
   key resolves to conflicting operations.

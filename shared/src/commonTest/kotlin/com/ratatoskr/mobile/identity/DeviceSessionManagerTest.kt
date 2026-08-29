@@ -1,9 +1,15 @@
 package com.ratatoskr.mobile.identity
 
+import com.ratatoskr.mobile.api.generated.model.ServiceCapabilities
+import com.ratatoskr.mobile.github.GithubActionMode
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,6 +18,80 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DeviceSessionManagerTest {
+    @Test
+    fun current_valid_github_service_projects_preview_and_closed_actions() =
+        runTest {
+            val api =
+                FakePlatformIdentityApi().apply {
+                    capabilityResults +=
+                        IdentityResult.Success(
+                            capabilityDocument(
+                                freshServices = listOf(githubService("metadata", "track", "star")),
+                            ),
+                        )
+                }
+            val manager = DeviceSessionManager(api, MemoryCredentialStorage(deviceCredentials()))
+
+            manager.restore()
+
+            val github = assertIs<CapabilityState.Ready>(manager.capabilities.value).snapshot.github
+            assertEquals(true, github?.repositoryPreview)
+            assertEquals(
+                setOf(GithubActionMode.Metadata, GithubActionMode.Track, GithubActionMode.Star),
+                github?.actions,
+            )
+        }
+
+    @Test
+    fun missing_stale_or_malformed_github_service_is_unavailable() =
+        runTest {
+            val documents =
+                listOf(
+                    capabilityDocument(),
+                    capabilityDocument(staleServices = setOf("github")),
+                    capabilityDocument(
+                        freshServices =
+                            listOf(
+                                githubService("metadata").copy(
+                                    document = buildJsonObject { put("repository_preview", true) },
+                                ),
+                            ),
+                    ),
+                )
+
+            documents.forEach { document ->
+                val api = FakePlatformIdentityApi().apply { capabilityResults += IdentityResult.Success(document) }
+                val manager = DeviceSessionManager(api, MemoryCredentialStorage(deviceCredentials()))
+                manager.restore()
+                assertNull(assertIs<CapabilityState.Ready>(manager.capabilities.value).snapshot.github)
+            }
+        }
+
+    @Test
+    fun capability_refresh_replaces_previous_github_actions() =
+        runTest {
+            val api =
+                FakePlatformIdentityApi().apply {
+                    capabilityResults +=
+                        IdentityResult.Success(capabilityDocument(freshServices = listOf(githubService("track"))))
+                    capabilityResults +=
+                        IdentityResult.Success(capabilityDocument(freshServices = listOf(githubService("metadata"))))
+                }
+            val manager = DeviceSessionManager(api, MemoryCredentialStorage(deviceCredentials()))
+            manager.restore()
+            assertEquals(
+                setOf(GithubActionMode.Track),
+                assertIs<CapabilityState.Ready>(manager.capabilities.value).snapshot.github?.actions,
+            )
+
+            manager.refreshCapabilities()
+
+            assertEquals(
+                setOf(GithubActionMode.Metadata),
+                assertIs<CapabilityState.Ready>(manager.capabilities.value).snapshot.github?.actions,
+            )
+        }
+
     @Test
     fun refresh_replaces_access_and_refresh_credentials_atomically() =
         runTest {
@@ -266,3 +346,15 @@ class DeviceSessionManagerTest {
             assertEquals(true, storage.credentials?.refreshTokenUsable)
         }
 }
+
+private fun githubService(vararg actions: String) =
+    ServiceCapabilities(
+        document =
+            buildJsonObject {
+                put("repository_preview", true)
+                put("repository_actions", buildJsonArray { actions.forEach { add(JsonPrimitive(it)) } })
+            },
+        service = "github",
+        stale = false,
+        observedAt = "2026-08-29T12:00:00Z",
+    )

@@ -1,0 +1,9 @@
+{
+  "aggregate": "succeeded",
+  "metadata": { "status": "accepted" },
+  "provider_star": {
+    "status": "skipped",
+    "reason": "not_applicable"
+  },
+  "desired_backup": { "status": "accepted" }
+}

@@ -3,6 +3,12 @@ package com.ratatoskr.mobile
 import android.app.Application
 import com.ratatoskr.mobile.api.generated.model.OperationStatus
 import com.ratatoskr.mobile.capture.CaptureOwner
+import com.ratatoskr.mobile.github.AuthorizedGithubRepository
+import com.ratatoskr.mobile.github.GithubAccess
+import com.ratatoskr.mobile.github.GithubActionIdentity
+import com.ratatoskr.mobile.github.GithubActionIdentityFactory
+import com.ratatoskr.mobile.github.GithubApplicationGraph
+import com.ratatoskr.mobile.github.KtorPlatformGithubApi
 import com.ratatoskr.mobile.identity.AndroidKeystoreCredentialStorage
 import com.ratatoskr.mobile.identity.CapabilityState
 import com.ratatoskr.mobile.identity.DeviceIdentityState
@@ -139,6 +145,29 @@ class AndroidApplicationContainer(
                 ),
             access = libraryAccess,
             scope = appScope,
+        )
+    private val githubAccess =
+        combine(sessions.state, sessions.capabilities) { identity, capabilities ->
+            val github = (capabilities as? CapabilityState.Ready)?.snapshot?.github
+            when {
+                identity !is DeviceIdentityState.Paired -> GithubAccess.PairingRequired
+                github == null ->
+                    GithubAccess.CapabilityUnavailable
+                else -> GithubAccess.Available(github)
+            }
+        }.stateIn(appScope, SharingStarted.Eagerly, GithubAccess.PairingRequired)
+    val github =
+        GithubApplicationGraph(
+            repository = AuthorizedGithubRepository(KtorPlatformGithubApi(client), authorizedRequests),
+            access = githubAccess,
+            scope = appScope,
+            identityFactory =
+                GithubActionIdentityFactory {
+                    GithubActionIdentity(
+                        confirmationEvidenceRef = "mobile-confirmation:${UUID.randomUUID()}",
+                        idempotencyKey = "mobile-github-action.${UUID.randomUUID()}",
+                    )
+                },
         )
     internal var operationRepository: com.ratatoskr.mobile.operation.OperationStatusRepository =
         AuthorizedOperationStatusRepository(

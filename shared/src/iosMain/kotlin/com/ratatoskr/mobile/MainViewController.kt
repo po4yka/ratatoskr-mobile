@@ -18,6 +18,7 @@ fun MainViewController(controller: IosApplicationController): UIViewController =
             detailPollingVisible = controller.sceneActive,
             onDetailStoreActive = { controller.activeDetailStore = it },
             library = controller.library,
+            github = controller.github,
             initialContentRoute = libraryRoute,
         )
     }

@@ -35,6 +35,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
+import platform.Foundation.NSTemporaryDirectory
+import platform.Foundation.NSUUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -43,6 +45,22 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 class IosApplicationGraphTest {
+    @Test
+    fun github_graph_shares_device_authorization_capabilities_and_fixture_browse_without_provider_credentials() =
+        runTest {
+            val controller =
+                IosApplicationController(
+                    queuePath = "${NSTemporaryDirectory()}/ratatoskr-github-${NSUUID.UUID().UUIDString}.sqlite",
+                    keychainAccessGroup = "com.ratatoskr.mobile.test.github",
+                    scheduleNativeWake = {},
+                )
+
+            val graph = assertNotNull(controller.github)
+            assertNotNull(graph.catalogStore)
+            assertNotNull(graph.detailStore)
+            assertTrue(graph.catalogStore.state.value is com.ratatoskr.mobile.github.GithubCatalogState.PairingRequired)
+        }
+
     @Test
     fun library_stores_share_live_authorization_and_fixture_authority_without_network_curation() =
         runTest {

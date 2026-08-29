@@ -40,6 +40,17 @@ unsafe server details. Favorite, note, collection/tag, full reader, social-reade
 reader endpoints are absent from the public contract. Their shared UI is therefore an explicitly
 unsynchronized, reset-on-restart contract fixture that performs no Platform call.
 
+GitHub browse/search follows the same fixture-only authority boundary because no public catalog
+list/search resource exists. A selected canonical URL is previewed only through authenticated
+`POST /v1/gh/repositories/preview`; metadata/track/star use
+`POST /v1/gh/repositories/actions`. The shared adapter refuses redirects, validates pinned schemas
+and cross-field aggregate rules, and sends only stable target identity, opaque account reference,
+confirmation evidence, and idempotency key. It never receives a provider token.
+
+`track` and `star` confirmations are immutable and one-shot. `star` names the external provider
+write and opaque acting account. Component results remain separate, and desired-backup `accepted`
+means policy accepted for publication, never that Vault completed a backup.
+
 ## Rules
 
 Inbound content is type/size/count/time bounded; future file access must be copied before source

@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
                 detailPollingVisible = isResumed,
                 onDetailStoreActive = { activeDetailStore = it },
                 library = container.library,
+                github = container.github,
                 initialContentRoute = pendingContentRoute,
             )
         }

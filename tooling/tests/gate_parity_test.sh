@@ -103,6 +103,22 @@ for marker in "${library_gate_markers[@]}"; do
     assert_in_file "$workflow" "$marker" "ci_runs_library_contract_and_state_tests"
 done
 
+github_gate_markers=(
+    './tooling/tests/github_contract_fixture_test.sh'
+    'GithubContractCodecTest'
+    'PlatformGithubApiTest'
+    'GithubCatalogStoreTest'
+    'GithubConfirmationStoreTest'
+    'GithubActionOutcomeStoreTest'
+    'GithubCatalogUiTest'
+    'github_graph_shares_device_authorization_capabilities_and_fixture_browse_without_provider_credentials'
+)
+
+for marker in "${github_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_github_contract_state_and_surface_tests"
+    assert_in_file "$workflow" "$marker" "ci_runs_github_contract_state_and_surface_tests"
+done
+
 if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_shared_tests"
     echo "ok - documented_gate_matches_ci"
@@ -110,6 +126,7 @@ if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_android_share_status_and_smoke"
     echo "ok - ci_runs_ios_share_status_and_smoke"
     echo "ok - ci_runs_library_contract_and_state_tests"
+    echo "ok - ci_runs_github_contract_state_and_surface_tests"
 fi
 
 exit "$failures"

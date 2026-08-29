@@ -1,0 +1,9 @@
+{
+  "aggregate": "succeeded",
+  "metadata": { "status": "succeeded" },
+  "provider_star": { "status": "succeeded" },
+  "desired_backup": {
+    "status": "failed",
+    "reason": "dependency_unavailable"
+  }
+}

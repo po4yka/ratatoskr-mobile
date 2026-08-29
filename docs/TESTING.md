@@ -98,6 +98,19 @@ mutations, inert hostile text, and loading/empty/offline/reauth/integration-pend
 that invalid external links preserve the current destination. All content is synthetic. This is
 not live Platform full-content/curation, universal-link, provider, or physical-device evidence.
 
+## GitHub catalog and action gate
+
+The pinned GitHub schema/fixture checker and mutation suite reject upstream drift. Common tests
+cover strict preview/action decoding, current non-stale service-capability projection,
+authenticated `/v1/gh` transport, stable fixture browse/search with zero list calls, one-shot
+track/star confirmation, partial component outcomes, revocation, invalid responses, and same-key
+explicit uncertain retry. API 35 `GithubCatalogUiTest` verifies shared Compose browse/detail,
+confirmation, and non-happy states. The iOS Simulator graph test proves the same graph is hosted by
+the thin controller; hosted XCTest and unsigned Xcode builds cover shell linkage.
+
+All inputs are synthetic. Fixture browse is not Platform catalog evidence, and no test claims a
+live GitHub service, connected account, provider write, Vault backup, or physical-device behavior.
+
 ## Test-first
 
 A change is planned before it is built, and the plan is a task list in which behaviour arrives in

@@ -33,3 +33,4 @@ fi
     >/dev/null
 
 diff -ru "$committed_models" "$generated_models"
+"$repository_root/tooling/contracts/check-github.sh"

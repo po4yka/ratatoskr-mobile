@@ -172,6 +172,11 @@ star
 
 `star` requires a clear confirmation of the external provider mutation. Mobile never receives the GitHub token.
 
+The implemented catalog list/search is a deterministic, reset-on-restart fixture because Platform
+does not publish a list/search contract. Selecting a row requests live detail through Platform;
+fixture metadata is never substituted as action authority. `track` confirms desired backup policy,
+not completed backup bytes.
+
 ### 6.4. File/document
 
 Supported files are copied into app-controlled staging before the source permission expires.
@@ -356,7 +361,8 @@ Representative public calls:
 POST /v1/devices/pair
 GET  /v1/capabilities
 POST /v1/captures
-POST /v1/github/repositories
+POST /v1/gh/repositories/preview
+POST /v1/gh/repositories/actions
 POST /v1/ai-archives/imports, when mobile upload is supported
 GET  /v1/operations/{id}
 GET  /v1/operations/{id}/events
@@ -373,8 +379,7 @@ An in-memory current-session capabilities snapshot drives feature visibility:
 
 ```text
 content.submit
-github.catalog
-github.star_write
+github service: repository_preview + repository_actions
 vault.snapshots
 social.x
 social.instagram_capture
@@ -387,8 +392,10 @@ search
 ```
 
 The coordinator fetches capabilities after restoration, pairing, and device-root recovery. Unknown
-names remain visible as data but cannot enable local behavior because feature checks accept only the
-closed `MobileCapability` set. Missing or stale capability state returns false for every feature;
+top-level names remain visible as data but cannot enable local behavior because feature checks
+accept only closed projections. The GitHub surface additionally requires exactly one current,
+non-stale `github` service document with `repository_preview == true` and a duplicate-free closed
+`repository_actions` set. Missing or stale capability state returns false for every feature;
 stale data may remain display-only context. A `401` receives one serialized session refresh/recovery
 and one capability retry. The client does not infer a backend service from an endpoint error alone.
 

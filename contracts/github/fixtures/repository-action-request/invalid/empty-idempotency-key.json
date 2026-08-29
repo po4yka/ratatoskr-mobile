@@ -1,0 +1,11 @@
+{
+  "mode": "star",
+  "target": {
+    "github_repository_numeric_id": 42,
+    "repository_full_name": "owner/repository",
+    "canonical_url": "https://github.com/owner/repository"
+  },
+  "account_ref": "github-account:018f0000-0000-7000-8000-000000000604",
+  "confirmation_evidence_ref": "telegram-confirmation:018f0000-0000-7000-8000-000000000605",
+  "idempotency_key": ""
+}

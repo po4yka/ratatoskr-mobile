@@ -103,16 +103,18 @@ internal fun sessionCredentials(
 internal fun capabilityDocument(
     names: Array<out String> = emptyArray(),
     staleServices: Set<String> = emptySet(),
+    freshServices: List<ServiceCapabilities> = emptyList(),
 ) = CapabilityDocument(
     apiVersion = "1",
     capabilities = names.toList(),
     minimumClientVersions = MinimumClientVersions(mobile = "1.0", web = "1.0"),
     services =
-        staleServices.map { service ->
-            ServiceCapabilities(
-                document = JsonNull,
-                service = service,
-                stale = true,
-            )
-        },
+        freshServices +
+            staleServices.map { service ->
+                ServiceCapabilities(
+                    document = JsonNull,
+                    service = service,
+                    stale = true,
+                )
+            },
 )

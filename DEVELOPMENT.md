@@ -41,6 +41,7 @@ underlying commands directly.
 ./tooling/tests/gate_parity_test.sh
 ./tooling/tests/ios_share_entitlements_test.sh
 ./tooling/tests/platform_library_contract_test.sh
+./tooling/tests/github_contract_fixture_test.sh
 
 build-gate -- ./gradlew --no-daemon ktlintCheck
 build-gate -- ./tooling/contracts/check.sh
@@ -77,6 +78,23 @@ end-to-end `AndroidShareSmokeTest`, plus `LibraryDeepLinkIntentTest` and `Librar
 operation fixture on an API 35 emulator; it proves activity/database reopen and UI wiring, not a
 live Platform deployment or physical device. Hosted CI retains the report as the
 `android-share-test-reports` artifact.
+
+## GitHub catalog and action gate
+
+`GithubContractCodecTest`, `PlatformGithubApiTest`, `GithubCatalogStoreTest`,
+`GithubConfirmationStoreTest`, and `GithubActionOutcomeStoreTest` cover the strict pinned preview
+and action contracts, authenticated Platform transport, fixture-only browse/search, one-shot
+track/star confirmation, partial component truth, revocation, and same-key uncertain retry.
+`GithubCatalogUiTest` renders the shared Compose catalog/detail/confirmation/result states on the
+API 35 emulator. The iOS KMP test
+`github_graph_shares_device_authorization_capabilities_and_fixture_browse_without_provider_credentials`
+proves the same graph is hosted by the thin iOS controller. `github_contract_fixture_test.sh` and
+the contract mutation gate pin the four reviewed schemas and their valid/invalid fixtures.
+
+Browse/search evidence is deliberately unsynchronized and reset-on-restart. Only detail preview
+and confirmed actions use the paired Platform `/v1/gh/repositories/preview` and
+`/v1/gh/repositories/actions` boundaries. These gates do not prove a live GitHub service,
+connected provider account, Vault completion, physical device, or provider write.
 
 ## iOS Share Extension and operation gate
 

@@ -1,11 +1,17 @@
 package com.ratatoskr.mobile.identity
 
 import com.ratatoskr.mobile.api.generated.model.CapabilityDocument
+import com.ratatoskr.mobile.api.generated.model.ServiceCapabilities
+import com.ratatoskr.mobile.github.GithubActionMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 
 sealed interface DeviceIdentityState {
     data object SignedOut : DeviceIdentityState
@@ -48,6 +54,12 @@ data class CapabilitySnapshot(
     val minimumMobileVersion: String,
     val names: Set<String>,
     val staleServices: Set<String>,
+    val github: GithubServiceCapability? = null,
+)
+
+data class GithubServiceCapability(
+    val repositoryPreview: Boolean,
+    val actions: Set<GithubActionMode>,
 )
 
 data class Authorization(
@@ -59,8 +71,6 @@ enum class MobileCapability(
     val wireName: String,
 ) {
     ContentSubmit("content.submit"),
-    GithubCatalog("github.catalog"),
-    GithubStarWrite("github.star_write"),
     VaultSnapshots("vault.snapshots"),
     SocialX("social.x"),
     SocialInstagram("social.instagram"),
@@ -340,6 +350,7 @@ class DeviceSessionManager(
             minimumMobileVersion = minimumClientVersions.mobile,
             names = capabilities.sorted().toSet(),
             staleServices = services.filter { it.stale }.map { it.service }.toSet(),
+            github = services.githubCapability(),
         )
 
     private fun DeviceCredentials.withSession(session: SessionCredentials) =
@@ -363,4 +374,24 @@ class DeviceSessionManager(
             origin = origin,
             accessToken = accessToken,
         )
+}
+
+private fun List<ServiceCapabilities>.githubCapability(): GithubServiceCapability? {
+    val service = filter { it.service == "github" }.singleOrNull() ?: return null
+    if (service.stale || service.observedAt.isNullOrBlank() || service.staleSince != null) return null
+    val document = service.document as? JsonObject ?: return null
+    if (document.keys != setOf("repository_preview", "repository_actions")) return null
+    if ((document["repository_preview"] as? JsonPrimitive)?.booleanOrNull != true) return null
+    val actionValues =
+        (document["repository_actions"] as? JsonArray)
+            ?.map { element ->
+                (element as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return null
+            } ?: return null
+    if (actionValues.size > GithubActionMode.entries.size || actionValues.size != actionValues.toSet().size) return null
+    val actions =
+        actionValues
+            .map { wireName ->
+                GithubActionMode.entries.firstOrNull { it.wireName == wireName } ?: return null
+            }.toSet()
+    return GithubServiceCapability(repositoryPreview = true, actions = actions)
 }

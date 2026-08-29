@@ -1,0 +1,20 @@
+{
+  "producer_commit": "d43b62a402f47984c95037c158ec29c5ee62ee5c",
+  "producer_repository": "https://github.com/po4yka/ratatoskr-contracts",
+  "files": {
+    "fixtures/repository-action-request/invalid/credential-like-member.json": "fa744e4487a3baf4309c627d965c0448185cc084178ff9b2fe0ec2507ed171bc",
+    "fixtures/repository-action-request/invalid/empty-idempotency-key.json": "0e291a9fa4fc3e1924b31954778c593103e3ec1f4d1b50f1ad9af6d693e77e6b",
+    "fixtures/repository-action-request/valid/star.json": "2f27a2a8ee6d2125cd88764bcf3aea64d014033d9a9aa9a31d58fe02b12278c4",
+    "fixtures/repository-action-result/invalid/inconsistent-aggregate.json": "d6d782bec5df1ab3af2d0240007bc2cc84773cf6e20b6997bfeb8c0a67aed3e8",
+    "fixtures/repository-action-result/invalid/metadata-accepted.json": "60faa737fcd794ba3a2fa074f7bcc2b2f579a22b92aa2f5ec1343f9d545712c2",
+    "fixtures/repository-action-result/valid/partial.json": "26428a5f54e8dfa6281e6b1011a771e9df817cf698a08aed316bc8e33c21c267",
+    "fixtures/repository-preview-request/invalid/unknown-field.json": "38e4259177d03d424b56c7b387549b3a936f60c4c9dc41a3b2928dc09cad86ae",
+    "fixtures/repository-preview-request/valid/repository.json": "e5546ca922c5078bad529caa184cba59c367f5a298b5d811ee812c05f49a048a",
+    "fixtures/repository-preview-response/invalid/zero-repository-id.json": "6bb15a408e882a388fb9747bedd4facd02772f3f5c159d0018348872652524a2",
+    "fixtures/repository-preview-response/valid/repository.json": "629d9a120c597c6f44d1f98fb55d7259d85d4cf8c0e762bc747f3bc095bef1d9",
+    "schemas/repository-action-request.v1.schema.json": "2ce83f1a981f0f09d1a3a52fd4e89b3d5da983255cf7ae383f4e716abd253e6d",
+    "schemas/repository-action-result.v1.schema.json": "d5a24f1806e2dce51ddd4fcd3ee52c09a9d60da7cc7fa98ebb71cbd62cf0fef8",
+    "schemas/repository-preview-request.v1.schema.json": "e7d537c77b33306fcb0be9f25ef475f3d00dbad837baf9fb4f74992d4e63183c",
+    "schemas/repository-preview-response.v1.schema.json": "c4e4aff8aad4ab0c5255438cb1ce5f09a6fa805eec331eb0cfea2dd0ab692cae"
+  }
+}

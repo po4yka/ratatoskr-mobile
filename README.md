@@ -10,7 +10,9 @@
 > privacy-safe operation notifications. iOS URL/text sharing now has a minimal native Share
 > Extension, atomic App Group handoff, shared Compose confirmation/status, and Room queue
 > submission. Live recent analyses/read-state plus an explicitly unsynchronized contract-fixture
-> reader/curation preview are available in shared Compose. File uploads are not implemented yet.
+> reader/curation preview are available in shared Compose. Capability-gated GitHub fixture
+> browse/search, live Platform preview, and explicitly confirmed metadata/track/star actions are
+> also available. File uploads are not implemented yet.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -189,10 +191,16 @@ A GitHub repository capture supports:
 | Mode | Catalog | GitHub write | Vault backup |
 |---|---:|---:|---:|
 | `metadata` | Yes | No | No |
-| `track` | Yes | No | Yes |
+| `track` | Yes | No | Desired policy request |
 | `star` | Yes | Yes | Policy-dependent |
 
-`metadata` is the default. `star` requires a connected account, provider scope, explicit confirmation, and an audited server operation. The mobile app never stores the GitHub provider token.
+Browse/search rows are deterministic contract fixtures, visibly unsynchronized, and reset on
+restart because Platform has no public catalog list/search contract. Opening a row obtains the
+authoritative live preview through paired Platform `/v1/gh`. `track` and `star` require fresh
+one-shot confirmation; `star` names the repository, opaque acting account, external write,
+metadata update, and desired-backup request. Results preserve metadata, provider-star, and
+desired-backup facts separately. An accepted desired policy is not a completed Vault backup. The
+mobile app never stores a GitHub provider token or calls GitHub directly.
 
 ## Operation progress
 
@@ -292,7 +300,7 @@ A capability set may include:
 
 ```text
 content.submit
-github.catalog
+github service: repository_preview + repository_actions
 vault.snapshots
 social.x
 social.instagram
@@ -320,6 +328,8 @@ Current coverage includes:
   notification/deep-link, and deterministic API 35 emulator smoke tests;
 - generated library transport, capability/UDF, fixture curation, inert reader, exact route-table,
   Android shared Compose/deep-link, and iOS shared/hosted routing tests;
+- pinned GitHub interaction contracts, strict codec/transport/capability/action stores, API 35
+  shared Compose instrumentation, and iOS shared graph linkage;
 - deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
   generated output;
 - shell/ADR/CI parity tests;
@@ -368,12 +378,14 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan items 1 through 6 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+Plan items 1 through 7 are implemented at repository level: Android/iOS shells, the shared/native ADR,
 pinned generated Platform models, device pairing/session behavior, native secure storage,
 capability discovery, bounded capture/queue models, Room KMP persistence, Android URL share intake,
 offline submission, iOS Share Extension handoff, operation status, generic notifications, live
-recent/read-state library access, strict content routing, fixture readers/curation, and lint/test/build CI exist. Evidence
+recent/read-state library access, strict content routing, fixture readers/curation,
+capability-gated GitHub fixture discovery and confirmed Platform actions, and lint/test/build CI exist. Evidence
 covers deterministic transport and queue tests, Android Emulator Keystore/Room/share smoke,
 app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not prove live
-Platform pairing/submission or full reader/curation, a physical-device run, signing/provisioning,
-provider integration, universal links, physical-device queue protection, or staged-file lifecycle.
+Platform pairing/submission/GitHub actions or full reader/curation, a physical-device run,
+signing/provisioning, provider integration, Vault completion, universal links, physical-device
+queue protection, or staged-file lifecycle.
