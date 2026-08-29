@@ -67,6 +67,29 @@ done
 
 printf 'ok - %s\n' "$test_name"
 
+test_name="adr_0003_records_ios_share_lifecycle_boundary"
+ios_share_adr="$repo_root/docs/adr/0003-ios-share-extension.md"
+[[ -f "$ios_share_adr" ]] || fail "ADR-0003 is absent"
+
+ios_share_terms=(
+  "Status: Accepted"
+  "Share Extension"
+  "App Group"
+  "shared Compose"
+  "Room queue"
+  "idempotency key"
+  "BGAppRefreshTask"
+  "Keychain access group"
+  "scene phase"
+  "Platform contract"
+)
+
+for term in "${ios_share_terms[@]}"; do
+  grep -Fq "$term" "$ios_share_adr" || fail "ADR-0003 does not record: $term"
+done
+
+printf 'ok - %s\n' "$test_name"
+
 test_name="adr_0004_records_current_schema_and_queue_semantics"
 queue_adr="$repo_root/docs/adr/0004-durable-offline-capture-queue.md"
 [[ -f "$queue_adr" ]] || fail "ADR-0004 is absent"

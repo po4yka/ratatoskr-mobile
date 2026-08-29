@@ -11,6 +11,28 @@
 		100000000000000000000002 /* ComposeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* ComposeRootView.swift */; };
 		100000000000000000000003 /* IosKeychainCredentialStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* IosKeychainCredentialStorageTests.swift */; };
 		100000000000000000000004 /* RatatoskrTestHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* RatatoskrTestHostApp.swift */; };
+		100000000000000000000005 /* ShareExtensionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* ShareExtensionParser.swift */; };
+		100000000000000000000006 /* ShareEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* ShareEnvelope.swift */; };
+		100000000000000000000007 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* ShareViewController.swift */; };
+		100000000000000000000009 /* ShareExtensionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* ShareExtensionParser.swift */; };
+		10000000000000000000000A /* ShareEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* ShareEnvelope.swift */; };
+		10000000000000000000000B /* RatatoskrShare.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001C /* RatatoskrShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		10000000000000000000000C /* ShareExtensionParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001E /* ShareExtensionParserTests.swift */; };
+		10000000000000000000000D /* AppGroupEnvelopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* AppGroupEnvelopeTests.swift */; };
+		10000000000000000000000E /* ShareEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* ShareEnvelope.swift */; };
+		10000000000000000000000F /* AppGroupInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000080 /* AppGroupInbox.swift */; };
+		100000000000000000000081 /* ShareEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* ShareEnvelope.swift */; };
+		100000000000000000000082 /* AppGroupInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000080 /* AppGroupInbox.swift */; };
+		100000000000000000000083 /* AppGroupInboxImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000084 /* AppGroupInboxImporterTests.swift */; };
+		100000000000000000000085 /* IosAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000086 /* IosAppModel.swift */; };
+		100000000000000000000087 /* IosSubmissionScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000088 /* IosSubmissionScheduler.swift */; };
+		100000000000000000000089 /* IosSubmissionScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000088 /* IosSubmissionScheduler.swift */; };
+		10000000000000000000008A /* IosSubmissionSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000008B /* IosSubmissionSchedulerTests.swift */; };
+		10000000000000000000008C /* IosSubmissionStatusFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000008D /* IosSubmissionStatusFlow.swift */; };
+		10000000000000000000008E /* IosSubmissionStatusFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000008D /* IosSubmissionStatusFlow.swift */; };
+		10000000000000000000008F /* IosSubmissionStatusFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000090 /* IosSubmissionStatusFlowTests.swift */; };
+		100000000000000000000091 /* ShareExtensionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* ShareExtensionParser.swift */; };
+		100000000000000000000092 /* IosShareSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000093 /* IosShareSmokeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,7 +43,37 @@
 		100000000000000000000014 /* RatatoskrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RatatoskrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000015 /* RatatoskrTestHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatatoskrTestHostApp.swift; sourceTree = "<group>"; };
 		100000000000000000000016 /* RatatoskrTestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RatatoskrTestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000017 /* ShareExtensionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionParser.swift; sourceTree = "<group>"; };
+		100000000000000000000018 /* ShareEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareEnvelope.swift; sourceTree = "<group>"; };
+		100000000000000000000019 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		10000000000000000000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		10000000000000000000001C /* RatatoskrShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RatatoskrShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		10000000000000000000001D /* RatatoskrShareTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RatatoskrShareTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		10000000000000000000001E /* ShareExtensionParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionParserTests.swift; sourceTree = "<group>"; };
+		10000000000000000000001F /* AppGroupEnvelopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupEnvelopeTests.swift; sourceTree = "<group>"; };
+		100000000000000000000080 /* AppGroupInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupInbox.swift; sourceTree = "<group>"; };
+		100000000000000000000084 /* AppGroupInboxImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroupInboxImporterTests.swift; sourceTree = "<group>"; };
+		100000000000000000000086 /* IosAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosAppModel.swift; sourceTree = "<group>"; };
+		100000000000000000000088 /* IosSubmissionScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSubmissionScheduler.swift; sourceTree = "<group>"; };
+		10000000000000000000008B /* IosSubmissionSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSubmissionSchedulerTests.swift; sourceTree = "<group>"; };
+		10000000000000000000008D /* IosSubmissionStatusFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSubmissionStatusFlow.swift; sourceTree = "<group>"; };
+		100000000000000000000090 /* IosSubmissionStatusFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSubmissionStatusFlowTests.swift; sourceTree = "<group>"; };
+		100000000000000000000093 /* IosShareSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosShareSmokeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		10000000000000000000002A /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				10000000000000000000000B /* RatatoskrShare.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXContainerItemProxy section */
 		100000000000000000000070 /* PBXContainerItemProxy */ = {
@@ -32,6 +84,20 @@
 			remoteInfo = Ratatoskr;
 		};
 		100000000000000000000072 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000041 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000043;
+			remoteInfo = RatatoskrTestHost;
+		};
+		100000000000000000000074 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000041 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000044;
+			remoteInfo = RatatoskrShare;
+		};
+		100000000000000000000076 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 100000000000000000000041 /* Project object */;
 			proxyType = 1;
@@ -62,6 +128,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		10000000000000000000002B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		10000000000000000000002F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -69,7 +149,10 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000031 /* Ratatoskr */,
+				100000000000000000000035 /* RatatoskrShare */,
 				100000000000000000000034 /* RatatoskrTests */,
+				100000000000000000000036 /* RatatoskrShareTests */,
+				100000000000000000000037 /* ShareSupport */,
 				100000000000000000000032 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +171,8 @@
 				100000000000000000000010 /* Ratatoskr.app */,
 				100000000000000000000014 /* RatatoskrTests.xctest */,
 				100000000000000000000016 /* RatatoskrTestHost.app */,
+				10000000000000000000001C /* RatatoskrShare.appex */,
+				10000000000000000000001D /* RatatoskrShareTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,6 +182,9 @@
 			children = (
 				100000000000000000000011 /* RatatoskrApp.swift */,
 				100000000000000000000012 /* ComposeRootView.swift */,
+				100000000000000000000086 /* IosAppModel.swift */,
+				100000000000000000000088 /* IosSubmissionScheduler.swift */,
+				10000000000000000000008D /* IosSubmissionStatusFlow.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -105,9 +193,41 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000013 /* IosKeychainCredentialStorageTests.swift */,
+				100000000000000000000084 /* AppGroupInboxImporterTests.swift */,
+				10000000000000000000008B /* IosSubmissionSchedulerTests.swift */,
+				100000000000000000000090 /* IosSubmissionStatusFlowTests.swift */,
+				100000000000000000000093 /* IosShareSmokeTests.swift */,
 				100000000000000000000015 /* RatatoskrTestHostApp.swift */,
 			);
 			path = RatatoskrTests;
+			sourceTree = "<group>";
+		};
+		100000000000000000000035 /* RatatoskrShare */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000017 /* ShareExtensionParser.swift */,
+				100000000000000000000019 /* ShareViewController.swift */,
+				10000000000000000000001A /* Info.plist */,
+			);
+			path = RatatoskrShare;
+			sourceTree = "<group>";
+		};
+		100000000000000000000036 /* RatatoskrShareTests */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000001E /* ShareExtensionParserTests.swift */,
+				10000000000000000000001F /* AppGroupEnvelopeTests.swift */,
+			);
+			path = RatatoskrShareTests;
+			sourceTree = "<group>";
+		};
+		100000000000000000000037 /* ShareSupport */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000018 /* ShareEnvelope.swift */,
+				100000000000000000000080 /* AppGroupInbox.swift */,
+			);
+			path = ShareSupport;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -121,10 +241,12 @@
 				100000000000000000000021 /* Sources */,
 				100000000000000000000020 /* Frameworks */,
 				100000000000000000000022 /* Resources */,
+				10000000000000000000002A /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				100000000000000000000075 /* PBXTargetDependency */,
 			);
 			name = Ratatoskr;
 			productName = Ratatoskr;
@@ -167,6 +289,41 @@
 			productReference = 100000000000000000000016 /* RatatoskrTestHost.app */;
 			productType = "com.apple.product-type.application";
 		};
+		100000000000000000000044 /* RatatoskrShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000054 /* Build configuration list for PBXNativeTarget "RatatoskrShare" */;
+			buildPhases = (
+				10000000000000000000002D /* Sources */,
+				10000000000000000000002B /* Frameworks */,
+				10000000000000000000002C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RatatoskrShare;
+			productName = RatatoskrShare;
+			productReference = 10000000000000000000001C /* RatatoskrShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		100000000000000000000045 /* RatatoskrShareTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000055 /* Build configuration list for PBXNativeTarget "RatatoskrShareTests" */;
+			buildPhases = (
+				10000000000000000000002E /* Sources */,
+				10000000000000000000002F /* Frameworks */,
+				100000000000000000000038 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				100000000000000000000077 /* PBXTargetDependency */,
+			);
+			name = RatatoskrShareTests;
+			productName = RatatoskrShareTests;
+			productReference = 10000000000000000000001D /* RatatoskrShareTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -176,7 +333,7 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2660;
-				TargetAttributes = {
+			TargetAttributes = {
 					100000000000000000000040 = {
 						CreatedOnToolsVersion = 26.6;
 					};
@@ -186,6 +343,13 @@
 					};
 					100000000000000000000043 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					100000000000000000000044 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					100000000000000000000045 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 100000000000000000000043;
 					};
 				};
 			};
@@ -205,6 +369,8 @@
 				100000000000000000000040 /* Ratatoskr */,
 				100000000000000000000042 /* RatatoskrTests */,
 				100000000000000000000043 /* RatatoskrTestHost */,
+				100000000000000000000044 /* RatatoskrShare */,
+				100000000000000000000045 /* RatatoskrShareTests */,
 			);
 		};
 /* End PBXProject section */
@@ -225,6 +391,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		100000000000000000000029 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		10000000000000000000002C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000038 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -262,6 +442,11 @@
 			files = (
 				100000000000000000000001 /* RatatoskrApp.swift in Sources */,
 				100000000000000000000002 /* ComposeRootView.swift in Sources */,
+				100000000000000000000085 /* IosAppModel.swift in Sources */,
+				100000000000000000000087 /* IosSubmissionScheduler.swift in Sources */,
+				10000000000000000000008C /* IosSubmissionStatusFlow.swift in Sources */,
+				10000000000000000000000E /* ShareEnvelope.swift in Sources */,
+				10000000000000000000000F /* AppGroupInbox.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,6 +455,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000003 /* IosKeychainCredentialStorageTests.swift in Sources */,
+				100000000000000000000081 /* ShareEnvelope.swift in Sources */,
+				100000000000000000000082 /* AppGroupInbox.swift in Sources */,
+				100000000000000000000083 /* AppGroupInboxImporterTests.swift in Sources */,
+				100000000000000000000089 /* IosSubmissionScheduler.swift in Sources */,
+				10000000000000000000008A /* IosSubmissionSchedulerTests.swift in Sources */,
+				10000000000000000000008E /* IosSubmissionStatusFlow.swift in Sources */,
+				10000000000000000000008F /* IosSubmissionStatusFlowTests.swift in Sources */,
+				100000000000000000000091 /* ShareExtensionParser.swift in Sources */,
+				100000000000000000000092 /* IosShareSmokeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +472,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000004 /* RatatoskrTestHostApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		10000000000000000000002D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000005 /* ShareExtensionParser.swift in Sources */,
+				100000000000000000000006 /* ShareEnvelope.swift in Sources */,
+				100000000000000000000007 /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		10000000000000000000002E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10000000000000000000000C /* ShareExtensionParserTests.swift in Sources */,
+				10000000000000000000000D /* AppGroupEnvelopeTests.swift in Sources */,
+				100000000000000000000009 /* ShareExtensionParser.swift in Sources */,
+				10000000000000000000000A /* ShareEnvelope.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -293,6 +508,16 @@
 			isa = PBXTargetDependency;
 			target = 100000000000000000000043 /* RatatoskrTestHost */;
 			targetProxy = 100000000000000000000072 /* PBXContainerItemProxy */;
+		};
+		100000000000000000000075 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000044 /* RatatoskrShare */;
+			targetProxy = 100000000000000000000074 /* PBXContainerItemProxy */;
+		};
+		100000000000000000000077 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000043 /* RatatoskrTestHost */;
+			targetProxy = 100000000000000000000076 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -331,7 +556,9 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
-				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = Ratatoskr/Ratatoskr.entitlements;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Ratatoskr/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Ratatoskr;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -356,7 +583,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
-				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = Ratatoskr/Ratatoskr.entitlements;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Ratatoskr/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Ratatoskr;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -378,6 +607,7 @@
 				ARCHS = arm64;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = RatatoskrTests/RatatoskrTestHost.entitlements;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -395,6 +625,7 @@
 				ARCHS = arm64;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = RatatoskrTests/RatatoskrTestHost.entitlements;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -410,12 +641,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = RatatoskrTests/RatatoskrTestHost.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
+				INFOPLIST_KEY_RatatoskrKeychainAccessGroup = "$(AppIdentifierPrefix)com.ratatoskr.mobile.shared";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.testhost;
@@ -430,12 +664,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = RatatoskrTests/RatatoskrTestHost.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
+				INFOPLIST_KEY_RatatoskrKeychainAccessGroup = "$(AppIdentifierPrefix)com.ratatoskr.mobile.shared";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.testhost;
@@ -443,6 +680,80 @@
 				SUPPORTED_PLATFORMS = iphonesimulator;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		100000000000000000000068 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGN_ENTITLEMENTS = RatatoskrShare/RatatoskrShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = RatatoskrShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		100000000000000000000069 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGN_ENTITLEMENTS = RatatoskrShare/RatatoskrShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = RatatoskrShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		10000000000000000000006A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.sharetests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RatatoskrTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RatatoskrTestHost";
+			};
+			name = Debug;
+		};
+		10000000000000000000006B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile.sharetests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RatatoskrTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RatatoskrTestHost";
 			};
 			name = Release;
 		};
@@ -481,6 +792,24 @@
 			buildConfigurations = (
 				100000000000000000000066 /* Debug */,
 				100000000000000000000067 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000054 /* Build configuration list for PBXNativeTarget "RatatoskrShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000068 /* Debug */,
+				100000000000000000000069 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000055 /* Build configuration list for PBXNativeTarget "RatatoskrShareTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				10000000000000000000006A /* Debug */,
+				10000000000000000000006B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

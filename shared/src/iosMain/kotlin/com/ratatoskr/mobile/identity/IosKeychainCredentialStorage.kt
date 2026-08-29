@@ -31,6 +31,7 @@ import platform.Security.SecItemUpdate
 import platform.Security.errSecDuplicateItem
 import platform.Security.errSecItemNotFound
 import platform.Security.errSecSuccess
+import platform.Security.kSecAttrAccessGroup
 import platform.Security.kSecAttrAccessible
 import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 import platform.Security.kSecAttrAccount
@@ -48,6 +49,7 @@ import platform.Security.kSecValueData
 class IosKeychainCredentialStorage(
     private val service: String = "com.ratatoskr.mobile.device-identity",
     private val account: String = "device-credentials",
+    private val accessGroup: String? = null,
 ) : SecureCredentialStorage {
     @Throws(SecureCredentialStorageException::class)
     override fun load(): DeviceCredentials? =
@@ -175,15 +177,27 @@ class IosKeychainCredentialStorage(
                 account,
                 kCFStringEncodingUTF8,
             ) ?: throw SecureCredentialStorageException()
+        val accessGroupValue =
+            accessGroup?.let {
+                CFStringCreateWithCString(
+                    kCFAllocatorDefault,
+                    it,
+                    kCFStringEncodingUTF8,
+                ) ?: throw SecureCredentialStorageException()
+            }
         try {
             CFDictionarySetValue(query, kSecClass, kSecClassGenericPassword)
             CFDictionarySetValue(query, kSecAttrService, serviceValue)
             CFDictionarySetValue(query, kSecAttrAccount, accountValue)
             CFDictionarySetValue(query, kSecAttrSynchronizable, kCFBooleanFalse)
+            if (accessGroupValue != null) {
+                CFDictionarySetValue(query, kSecAttrAccessGroup, accessGroupValue)
+            }
             return block(query)
         } finally {
             CFRelease(serviceValue)
             CFRelease(accountValue)
+            if (accessGroupValue != null) CFRelease(accessGroupValue)
             CFRelease(query)
         }
     }

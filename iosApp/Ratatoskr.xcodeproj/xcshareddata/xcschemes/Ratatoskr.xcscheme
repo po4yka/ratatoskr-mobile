@@ -22,6 +22,34 @@
          </BuildActionEntry>
          <BuildActionEntry
             buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "NO"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "100000000000000000000044"
+               BuildableName = "RatatoskrShare.appex"
+               BlueprintName = "RatatoskrShare"
+               ReferencedContainer = "container:Ratatoskr.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "100000000000000000000045"
+               BuildableName = "RatatoskrShareTests.xctest"
+               BlueprintName = "RatatoskrShareTests"
+               ReferencedContainer = "container:Ratatoskr.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
             buildForRunning = "NO"
             buildForProfiling = "NO"
             buildForArchiving = "NO"
@@ -48,6 +76,15 @@
                BlueprintIdentifier = "100000000000000000000042"
                BuildableName = "RatatoskrTests.xctest"
                BlueprintName = "RatatoskrTests"
+               ReferencedContainer = "container:Ratatoskr.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "100000000000000000000045"
+               BuildableName = "RatatoskrShareTests.xctest"
+               BlueprintName = "RatatoskrShareTests"
                ReferencedContainer = "container:Ratatoskr.xcodeproj">
             </BuildableReference>
          </TestableReference>

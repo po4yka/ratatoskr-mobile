@@ -20,7 +20,12 @@
    privacy-safe notifications, and validated operation routing. Evidence covers shared tests and a
    deterministic API 35 emulator parser/UI/worker/notification/smoke gate across Room reopen; it is
    not live Platform, physical-device, provider, file-upload, or iOS Share Extension proof.
-5. Build iOS Share Extension/App Group staging, offline submission, and operation status.
+5. **Complete (2026-08-29):** implement bounded iOS Share Extension URL/text parsing, atomic App
+   Group handoff, shared Compose confirmation, durable Room queue submission, opportunistic
+   BackgroundTasks wake-up, explicit shared Keychain group, and shared operation status. Evidence
+   covers shared iOS tests plus hosted parser/handoff/scheduler/Keychain/status and a synthetic
+   simulator smoke across Room close/reopen; it is not live Platform, guaranteed OS background
+   delivery, physical-device budget, release signing, file upload, provider, or App Store proof.
 6. Add notes/collections/tags and article/social routing.
 7. Add GitHub metadata/track/star with explicit write confirmation.
 8. Add resumable file upload, retention/cleanup, background constraints, revoke/clear-data.

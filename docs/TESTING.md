@@ -66,6 +66,24 @@ emulator:
 CI uploads the HTML/XML output as `android-share-test-reports`. This is emulator/fixture evidence,
 not a live Platform, provider, physical-device, notification-delivery, or store-release claim.
 
+## iOS Share Extension and operation gate
+
+The shared iOS tests exercise stable handoff identity, Room close/reopen, bounded submission,
+refresh rotation/revocation, and queue-derived wake time. Hosted XCTest adds:
+
+- `ShareExtensionParserTests` and `AppGroupEnvelopeTests` for item-provider and atomic publish;
+- `AppGroupInboxImporterTests` for one-at-a-time claims and restart recovery;
+- `IosSubmissionSchedulerTests` for BackgroundTasks coalescing, early wake, expiration and repair;
+- `IosSubmissionStatusFlowTests` for confirmation/offline/operation fixture and scene states;
+- `IosKeychainCredentialStorageTests` for explicit-group isolation and device-only policy;
+- `IosShareSmokeTests` for parser, handoff, real Room queue reopen, stable identity and terminal fixture.
+
+`ios_share_entitlements_test.sh` checks exact configured groups and the reviewed background task.
+The build gate also inspects Xcode's effective simulator `.xcent` files for the app and embedded
+extension. CI retains `ios-share-test-results`. These are synthetic simulator results only, not
+live Platform, physical-device budget/background delivery, release-signing, file-upload, provider,
+or App Store evidence.
+
 ## Test-first
 
 A change is planned before it is built, and the plan is a task list in which behaviour arrives in

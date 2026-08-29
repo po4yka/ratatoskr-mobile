@@ -131,13 +131,37 @@ jobs:
       - name: Swift format and lint
         run: swift format lint --recursive --strict iosApp
 
+      - name: iOS Share entitlements and embedded target structure
+        run: ./tooling/tests/ios_share_entitlements_test.sh
+
       - name: Shared iOS tests including IosCaptureQueuePersistenceTest and framework
         run: ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
 
-      - name: App-hosted iOS Keychain test
+      - name: >-
+          ShareExtensionParserTests, AppGroupEnvelopeTests, AppGroupInboxImporterTests,
+          IosKeychainCredentialStorageTests, IosSubmissionSchedulerTests,
+          IosSubmissionStatusFlowTests, and IosShareSmokeTests
         run: |
           simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"
-          xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" test
+          xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" -resultBundlePath build/ios-share-test-results.xcresult test
 
-      - name: Unsigned iOS Simulator app
+      - name: Inspect effective app and RatatoskrShare.appex simulator entitlements
+        run: |
+          app_xcent="$(find ~/Library/Developer/Xcode/DerivedData -path '*Ratatoskr.build/Debug-iphonesimulator/Ratatoskr.build/Ratatoskr.app-Simulated.xcent' -print -quit)"
+          extension_xcent="$(find ~/Library/Developer/Xcode/DerivedData -path '*Ratatoskr.build/Debug-iphonesimulator/RatatoskrShare.build/RatatoskrShare.appex-Simulated.xcent' -print -quit)"
+          test -n "$app_xcent" && test -n "$extension_xcent"
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$app_xcent" | grep -Fx group.com.ratatoskr.mobile
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' "$extension_xcent" | grep -Fx group.com.ratatoskr.mobile
+          /usr/libexec/PlistBuddy -c 'Print :keychain-access-groups:0' "$app_xcent" | grep -E '^[^.]+\.com\.ratatoskr\.mobile\.shared$'
+          /usr/libexec/PlistBuddy -c 'Print :keychain-access-groups:0' "$extension_xcent" | grep -E '^[^.]+\.com\.ratatoskr\.mobile\.shared$'
+
+      - name: Retain synthetic iOS share test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ios-share-test-results
+          if-no-files-found: error
+          path: build/ios-share-test-results.xcresult
+
+      - name: Unsigned iOS Simulator app with embedded RatatoskrShare.appex
         run: xcodebuild -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

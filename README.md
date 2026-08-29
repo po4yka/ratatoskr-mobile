@@ -7,7 +7,9 @@
 > device-pairing, rotating-session, revocation, and capability-discovery client, plus shared
 > capture models, durable queue persistence, and operation projection. Android URL sharing now has
 > native `ACTION_SEND` intake, shared Compose staging/status UI, WorkManager submission, and
-> privacy-safe operation notifications. iOS sharing and file uploads are not implemented yet.
+> privacy-safe operation notifications. iOS URL/text sharing now has a minimal native Share
+> Extension, atomic App Group handoff, shared Compose confirmation/status, and Room queue
+> submission. File uploads are not implemented yet.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -60,7 +62,8 @@ ratatoskr-mobile/
 ADR-0001 chooses shared Compose presentation, public API models/client adapters, and capture-queue
 rules inside KMP. Thin native shells retain application/share lifecycle, secure storage, background
 scheduling, file access, notifications, permissions, and platform accessibility integration.
-ADR-0002 applies that boundary to Android URL sharing and operation status.
+ADR-0002 applies that boundary to Android URL sharing and operation status; ADR-0003 applies it to
+the iOS Share Extension, App Group, BackgroundTasks, and scene lifecycle.
 
 ## Capture contract
 
@@ -102,15 +105,15 @@ slice because their contract and staging lifecycle belong to later plan items.
 
 ## iOS Share Extension
 
-The iOS Share Extension receives supported `NSExtensionItem` representations and writes a compact capture request into the shared app container.
+The implemented iOS Share Extension receives one bounded URL or text representation and writes a
+compact capture envelope into the shared app container.
 
-The extension should:
+The extension:
 
-- extract URLs, text, and files through supported item providers;
+- extracts URLs and text through supported item providers;
 - avoid long network work inside extension time limits;
 - save the request durably before completing;
-- provide a minimal note/collection UI;
-- hand off larger or deferred uploads to the main application;
+- leaves notes, collections, files, and uploads to later contract-backed items;
 - make unavailable or unsupported item representations explicit;
 - never depend on provider cookies from the source app.
 

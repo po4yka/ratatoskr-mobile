@@ -68,11 +68,30 @@ for marker in "${android_share_gate_markers[@]}"; do
     assert_in_file "$workflow" "$marker" "ci_runs_android_share_status_and_smoke"
 done
 
+ios_share_gate_markers=(
+    './tooling/tests/ios_share_entitlements_test.sh'
+    'ShareExtensionParserTests'
+    'AppGroupEnvelopeTests'
+    'AppGroupInboxImporterTests'
+    'IosKeychainCredentialStorageTests'
+    'IosSubmissionSchedulerTests'
+    'IosSubmissionStatusFlowTests'
+    'IosShareSmokeTests'
+    'RatatoskrShare.appex'
+    'ios-share-test-results'
+)
+
+for marker in "${ios_share_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_ios_share_status_and_smoke"
+    assert_in_file "$workflow" "$marker" "ci_runs_ios_share_status_and_smoke"
+done
+
 if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_shared_tests"
     echo "ok - documented_gate_matches_ci"
     echo "ok - ci_runs_capture_queue_current_schema_tests"
     echo "ok - ci_runs_android_share_status_and_smoke"
+    echo "ok - ci_runs_ios_share_status_and_smoke"
 fi
 
 exit "$failures"

@@ -62,6 +62,12 @@ class ShareStagingStore(
     private val scope: CoroutineScope,
     private val submissionAccess: StateFlow<ShareSubmissionAccess> =
         MutableStateFlow(ShareSubmissionAccess.Available),
+    private val captureSource: CaptureSource = CaptureSource.AndroidShareTarget,
+    private val captureCreatedAt: kotlin.time.Instant? = null,
+    private val idempotencyKey: String? = null,
+    private val onCommitted: (com.ratatoskr.mobile.queue.QueueRecord) -> Unit = {},
+    private val onCancelled: () -> Unit = {},
+    private val onFailure: () -> Unit = {},
 ) {
     private val mutableState =
         MutableStateFlow<ShareStagingState>(initialIntake.readyState(submissionAccess.value))
@@ -82,6 +88,7 @@ class ShareStagingStore(
             ShareStagingAction.Cancel -> {
                 if (mutableState.value is ShareStagingState.Ready) {
                     mutableState.value = ShareStagingState.Cancelled
+                    onCancelled()
                 }
             }
             ShareStagingAction.Confirm -> confirm()
@@ -99,6 +106,7 @@ class ShareStagingStore(
         val currentOwner = owner.get()
         if (currentOwner == null) {
             mutableState.value = ShareStagingState.Failed("Pair this device before submitting.")
+            onFailure()
             return
         }
         mutableState.value = ShareStagingState.Saving
@@ -108,20 +116,24 @@ class ShareStagingStore(
                     queue.enqueue(
                         CaptureRequest(
                             owner = currentOwner,
-                            source = CaptureSource.AndroidShareTarget,
+                            source = captureSource,
                             payload = CapturePayload.Url(url),
-                            createdAt = clock.now(),
+                            createdAt = captureCreatedAt ?: clock.now(),
                         ),
+                        idempotencyKey = idempotencyKey,
                     )
             ) {
-                is QueueResult.Failure ->
+                is QueueResult.Failure -> {
                     mutableState.value = ShareStagingState.Failed("The capture could not be queued safely.")
+                    onFailure()
+                }
                 is QueueResult.Success -> {
                     mutableState.value =
                         ShareStagingState.Queued(
                             localId = result.value.localId,
                             message = "Safely queued. Ratatoskr will submit it when online.",
                         )
+                    onCommitted(result.value)
                     runCatching { scheduler.schedule(result.value.nextEligibleAt) }
                 }
             }

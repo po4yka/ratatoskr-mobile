@@ -60,7 +60,7 @@ ios_shell_hosts_shared_compose() {
   assert_file "$test_name" "iosApp/Ratatoskr.xcodeproj/project.pbxproj"
   assert_file "$test_name" "iosApp/Ratatoskr.xcodeproj/xcshareddata/xcschemes/Ratatoskr.xcscheme"
   assert_contains "$test_name" "shared/src/iosMain/kotlin/com/ratatoskr/mobile/MainViewController.kt" "ComposeUIViewController"
-  assert_contains "$test_name" "iosApp/Ratatoskr/App/ComposeRootView.swift" "MainViewControllerKt.MainViewController()"
+  assert_contains "$test_name" "iosApp/Ratatoskr/App/ComposeRootView.swift" "MainViewControllerKt.MainViewController(controller: controller)"
   assert_contains "$test_name" "iosApp/Ratatoskr.xcodeproj/project.pbxproj" "embedAndSignAppleFrameworkForXcode"
 
   printf 'ok - %s\n' "$test_name"

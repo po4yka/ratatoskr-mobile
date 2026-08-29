@@ -1,6 +1,6 @@
 # Developing Ratatoskr Mobile
 
-> Status: Android URL Share Target implemented
+> Status: Android and iOS URL Share surfaces implemented
 > Last reviewed: 2026-08-29
 
 The repository contains buildable Android and iOS application shells around one shared Compose
@@ -8,8 +8,10 @@ Multiplatform root. Device pairing, rotating device sessions, native secure cred
 and session-scoped Platform capability discovery are implemented. Shared URL, text-note, and
 staged-file-reference models plus the durable Room capture queue are implemented. Android
 `ACTION_SEND text/plain` URL intake, shared Compose staging/status UI, WorkManager submission,
-generic notifications, and validated operation-detail routing are implemented. iOS sharing and file
-uploads are not.
+generic notifications, and validated operation-detail routing are implemented. The iOS Share
+Extension performs bounded native parsing and atomic App Group staging; the main app confirms
+through shared Compose, submits from the Room queue, and exposes shared operation status. File
+uploads are not implemented.
 
 ## Toolchain
 
@@ -34,6 +36,7 @@ underlying commands directly.
 ./tooling/tests/bootstrap_structure_test.sh
 ./tooling/tests/architecture_boundary_test.sh
 ./tooling/tests/gate_parity_test.sh
+./tooling/tests/ios_share_entitlements_test.sh
 
 build-gate -- ./gradlew --no-daemon ktlintCheck
 build-gate -- ./tooling/contracts/check.sh
@@ -45,7 +48,7 @@ build-gate -- ./gradlew --no-daemon :androidApp:connectedDebugAndroidTest
 swift format lint --recursive --strict iosApp
 build-gate -- ./gradlew --no-daemon :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64
 simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"
-build-gate -- xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" test
+build-gate -- xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" -resultBundlePath build/ios-share-test-results.xcresult test
 build-gate -- xcodebuild -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
 openspec validate --all --strict
@@ -70,6 +73,22 @@ end-to-end `AndroidShareSmokeTest`. The smoke uses only synthetic data and a det
 operation fixture on an API 35 emulator; it proves activity/database reopen and UI wiring, not a
 live Platform deployment or physical device. Hosted CI retains the report as the
 `android-share-test-reports` artifact.
+
+## iOS Share Extension and operation gate
+
+The `Ratatoskr` Xcode scheme builds the app, embeds `RatatoskrShare.appex`, and runs both hosted test
+targets. `ShareExtensionParserTests` and `AppGroupEnvelopeTests` cover hostile item-provider input,
+deadlines, exact schema, and atomic publish. `AppGroupInboxImporterTests` covers serialized rename
+claims, cancellation, retention, and restart recovery. `IosSubmissionSchedulerTests` exercises a
+fake BackgroundTasks boundary; `IosSubmissionStatusFlowTests` covers confirmation, offline,
+operation fixtures, scene polling, and reauthentication. `IosKeychainCredentialStorageTests`
+performs explicit access-group round-trip/replacement/deletion and wrong-group isolation.
+
+`IosShareSmokeTests` uses synthetic content to pass the real extension parser and envelope through
+the App Group importer, close/reopen the real Room KMP queue with the same idempotency key, and
+render a terminal fixture status. CI retains its content-free result as `ios-share-test-results`.
+The smoke is simulator/fixture proof, not live Platform, guaranteed BackgroundTasks delivery,
+physical-device extension budget, provider, release-signing, file-upload, or App Store proof.
 
 ## Capture queue gate
 
