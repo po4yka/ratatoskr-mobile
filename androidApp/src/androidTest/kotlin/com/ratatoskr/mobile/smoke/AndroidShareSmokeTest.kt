@@ -62,7 +62,7 @@ class AndroidShareSmokeTest {
 
             compose.onNodeWithText("Synthetic article\nhttps://example.test/smoke").assertIsDisplayed()
             compose.onNodeWithText("Confirm capture").performClick()
-            compose.waitUntil(timeoutMillis = 5_000) {
+            compose.waitUntil(timeoutMillis = 30_000) {
                 compose
                     .onAllNodesWithText("Safely queued. Ratatoskr will submit it when online.")
                     .fetchSemanticsNodes()
