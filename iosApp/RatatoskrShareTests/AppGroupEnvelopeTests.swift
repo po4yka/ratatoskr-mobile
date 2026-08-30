@@ -78,6 +78,71 @@ final class AppGroupEnvelopeTests: XCTestCase {
       FileManager.default.fileExists(atPath: rootURL.appendingPathExtension("json").path))
   }
 
+  func testSupportedFileIsProtectedAndPublishedAtomically() throws {
+    let source = rootURL.appendingPathComponent("source.pdf")
+    let artifactRoot = rootURL.appendingPathComponent("artifacts", isDirectory: true)
+    let bytes = Data("%PDF-1.7\nsynthetic".utf8)
+    try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+    try bytes.write(to: source)
+    let id = UUID(uuidString: "20dd7e57-9848-4af1-823b-9217df8058bb")!
+
+    let descriptor = try AppGroupArtifactStore(rootURL: artifactRoot).stage(
+      ShareFileCandidate(
+        sourceURL: source, mediaType: "application/pdf", displayName: "../synthetic.pdf",
+        sizeBytes: Int64(bytes.count)),
+      artifactID: id)
+
+    XCTAssertEqual(descriptor.artifactID, id)
+    XCTAssertEqual(descriptor.displayName, "synthetic.pdf")
+    XCTAssertEqual(descriptor.sizeBytes, Int64(bytes.count))
+    XCTAssertEqual(descriptor.sha256Hex.count, 64)
+    XCTAssertEqual(
+      try Data(
+        contentsOf: AppGroupArtifactStore(rootURL: artifactRoot).publishedArtifactURL(id: id)),
+      bytes)
+  }
+
+  func testInterruptedFileCopyPublishesNothing() throws {
+    let missing = rootURL.appendingPathComponent("missing.pdf")
+    let artifactRoot = rootURL.appendingPathComponent("artifacts", isDirectory: true)
+    let id = UUID()
+
+    XCTAssertThrowsError(
+      try AppGroupArtifactStore(rootURL: artifactRoot).stage(
+        ShareFileCandidate(
+          sourceURL: missing, mediaType: "application/pdf", displayName: "x.pdf", sizeBytes: 10),
+        artifactID: id))
+    XCTAssertFalse(
+      FileManager.default.fileExists(
+        atPath: AppGroupArtifactStore(rootURL: artifactRoot).publishedArtifactURL(id: id).path))
+  }
+
+  func testStagingRefusesASixtyFifthPublishedArtifact() throws {
+    let artifactRoot = rootURL.appendingPathComponent("artifacts", isDirectory: true)
+    try FileManager.default.createDirectory(at: artifactRoot, withIntermediateDirectories: true)
+    for index in 0..<64 {
+      try Data("%PDF-existing-\(index)".utf8).write(
+        to: artifactRoot.appendingPathComponent(UUID().uuidString.lowercased()))
+    }
+    let source = rootURL.appendingPathComponent("new.pdf")
+    try Data("%PDF-new".utf8).write(to: source)
+
+    XCTAssertThrowsError(
+      try AppGroupArtifactStore(rootURL: artifactRoot).stage(
+        ShareFileCandidate(
+          sourceURL: source,
+          mediaType: "application/pdf",
+          displayName: "new.pdf",
+          sizeBytes: Int64((try Data(contentsOf: source)).count)),
+        artifactID: UUID())
+    ) { error in
+      XCTAssertEqual(error as? ShareEnvelopeError, .oversized)
+    }
+    let published = try FileManager.default.contentsOfDirectory(atPath: artifactRoot.path)
+      .filter { !$0.hasPrefix(".") }
+    XCTAssertEqual(published.count, 64)
+  }
+
   private func fixture() -> ShareEnvelope {
     ShareEnvelope(
       id: UUID(uuidString: "10dd7e57-9848-4af1-823b-9217df8058bb")!,

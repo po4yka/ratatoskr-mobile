@@ -29,8 +29,34 @@ final class ShareViewController: UIViewController {
         extensionContext?.inputItems
         .compactMap { $0 as? NSExtensionItem }
         .flatMap { $0.attachments ?? [] }
-        .map(ItemProviderLoader.init(provider:)) ?? []
-      switch await ShareExtensionParser().parse(loaders: providers) {
+        ?? []
+      let fileProviders = providers.map(ItemProviderFileStager.init(provider:)).filter(
+        \.supportsFile)
+      if !fileProviders.isEmpty {
+        do {
+          guard providers.count == 1, fileProviders.count == 1 else {
+            throw ShareParseError.ambiguous
+          }
+          guard
+            let container = FileManager.default.containerURL(
+              forSecurityApplicationGroupIdentifier: Self.appGroup)
+          else { throw ShareEnvelopeError.unavailable }
+          let id = UUID()
+          let descriptor = try await fileProviders[0].stage(
+            rootURL: container.appendingPathComponent("ShareArtifacts", isDirectory: true),
+            artifactID: id)
+          _ = try AppGroupEnvelopeStore(
+            rootURL: container.appendingPathComponent("ShareInbox", isDirectory: true)
+          ).publish(ShareEnvelope(id: id, capturedAt: Date(), file: descriptor))
+          finish(.success(()))
+        } catch {
+          finish(.failure(error))
+        }
+        return
+      }
+      switch await ShareExtensionParser().parse(
+        loaders: providers.map(ItemProviderLoader.init(provider:)))
+      {
       case .success(let intake):
         do {
           guard

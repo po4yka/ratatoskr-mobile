@@ -1,0 +1,6 @@
+{
+  "resumption_token": "rst_0v8k4a2j9pm1d7n5tp3es6uabfhij1cm4nop5qrs",
+  "chunk_index": 1,
+  "received_chunks_count": 2,
+  "idempotent_replay": true
+}

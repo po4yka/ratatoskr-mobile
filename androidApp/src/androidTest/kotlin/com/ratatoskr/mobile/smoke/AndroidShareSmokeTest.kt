@@ -1,6 +1,7 @@
 package com.ratatoskr.mobile.smoke
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -16,6 +17,7 @@ import com.ratatoskr.mobile.api.generated.model.OperationList
 import com.ratatoskr.mobile.api.generated.model.OperationSnapshot
 import com.ratatoskr.mobile.api.generated.model.OperationStatus
 import com.ratatoskr.mobile.capture.CaptureOwner
+import com.ratatoskr.mobile.capture.CapturePayload
 import com.ratatoskr.mobile.identity.AndroidKeystoreCredentialStorage
 import com.ratatoskr.mobile.identity.DeviceCredentials
 import com.ratatoskr.mobile.operation.OperationRepositoryResult
@@ -73,11 +75,12 @@ class AndroidShareSmokeTest {
             val owner = CaptureOwner(ORIGIN, ACCOUNT_ID)
             val queued =
                 application.container.queue
-                    .pendingSubmissions(owner)
+                    .snapshot()
                     .first {
-                        it.request.payload
-                            .toString()
-                            .contains("/smoke")
+                        it.request.owner == owner &&
+                            it.request.payload
+                                .toString()
+                                .contains("/smoke")
                     }
             val accepted = application.container.queue.recordAccepted(queued.localId, OPERATION_ID)
             assertTrue(accepted is QueueResult.Success)
@@ -111,6 +114,48 @@ class AndroidShareSmokeTest {
             .onNodeWithText("This share contains more than one URL. Share one URL at a time.")
             .assertIsDisplayed()
     }
+
+    @Test
+    fun share_file_stages_private_bytes_and_queues_opaque_reference() =
+        runBlocking {
+            val application = compose.activity.application as RatatoskrApplication
+            application.container.sessions.signOut()
+            AndroidKeystoreCredentialStorage(application).save(credentials())
+            application.container.sessions.restore()
+            application.container.shareSubmissionAccess = MutableStateFlow(ShareSubmissionAccess.Available)
+            val intent =
+                Intent(Intent.ACTION_SEND)
+                    .setType("application/pdf")
+                    .putExtra(Intent.EXTRA_STREAM, Uri.parse("content://com.ratatoskr.mobile.test.synthetic-share/synthetic.pdf"))
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            compose.activityRule.scenario.onActivity { it.acceptIntent(intent) }
+            compose.waitUntil(timeoutMillis = 30_000) {
+                compose.onAllNodesWithText("synthetic.pdf").fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithText("integration pending", substring = true, ignoreCase = true).assertIsDisplayed()
+            compose.onNodeWithText("Confirm capture").performClick()
+            compose.waitUntil(timeoutMillis = 30_000) {
+                compose
+                    .onAllNodesWithText("Safely queued locally. File submission is integration pending.")
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            }
+
+            val owner = CaptureOwner(ORIGIN, ACCOUNT_ID)
+            val fileRecord =
+                application.container.queue.snapshot().first {
+                    it.request.owner == owner && it.request.payload is CapturePayload.FileReference
+                }
+            val payload = fileRecord.request.payload as CapturePayload.FileReference
+            assertEquals("synthetic.pdf", payload.displayName)
+            assertTrue(
+                application.container.artifactStore
+                    .publishedFiles()
+                    .any { it.name == payload.stagedFileId },
+            )
+            application.container.sessions.signOut()
+        }
 
     @Test
     fun operation_polling_stops_when_activity_is_not_resumed() {

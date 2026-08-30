@@ -79,6 +79,36 @@ final class ShareExtensionParserTests: XCTestCase {
     XCTAssertEqual(result, .failure(.timedOut))
   }
 
+  func testSupportedFileIsParsedWithinBounds() throws {
+    let candidate = ShareFileCandidate(
+      sourceURL: URL(fileURLWithPath: "/tmp/synthetic.pdf"),
+      mediaType: "application/pdf",
+      displayName: "synthetic.pdf",
+      sizeBytes: 12
+    )
+
+    XCTAssertEqual(ShareFileParser().parse([candidate]), .success(candidate))
+  }
+
+  func testMultipleOrMismatchedFilesAreRejected() {
+    let pdf = ShareFileCandidate(
+      sourceURL: URL(fileURLWithPath: "/tmp/a.pdf"), mediaType: "application/pdf",
+      displayName: "a.pdf", sizeBytes: 12)
+    let html = ShareFileCandidate(
+      sourceURL: URL(fileURLWithPath: "/tmp/a.html"), mediaType: "text/html",
+      displayName: "a.html", sizeBytes: 12)
+
+    XCTAssertEqual(ShareFileParser().parse([pdf, pdf]), .failure(.ambiguous))
+    XCTAssertEqual(ShareFileParser().parse([html]), .failure(.unsupported))
+    XCTAssertEqual(
+      ShareFileParser().parse([
+        ShareFileCandidate(
+          sourceURL: pdf.sourceURL, mediaType: pdf.mediaType, displayName: pdf.displayName,
+          sizeBytes: 100 * 1_024 * 1_024 + 1)
+      ]),
+      .failure(.oversized))
+  }
+
   private func parser() -> ShareExtensionParser {
     ShareExtensionParser()
   }

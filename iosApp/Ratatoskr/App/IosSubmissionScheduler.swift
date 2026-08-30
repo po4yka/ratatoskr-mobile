@@ -123,12 +123,22 @@ final class IosSubmissionScheduler: @unchecked Sendable {
     }
   }
 
+  func cancelAll() {
+    lock.withLock {
+      activeTask?.cancel()
+      activeTask = nil
+      store.nextWake = nil
+      boundary.cancel(identifier: Self.identifier)
+    }
+  }
+
   private let boundary: IosBackgroundTaskBoundary
   private let store: IosWakeStateStore
   private let now: () -> Date
   private let drain: () async throws -> Int64?
   private let lock = NSLock()
   private var started = false
+  private var activeTask: Task<Void, Never>?
 
   private func handle(_ execution: IosBackgroundExecution) {
     let earlyWake = lock.withLock { store.nextWake }.flatMap { persisted in
@@ -152,6 +162,152 @@ final class IosSubmissionScheduler: @unchecked Sendable {
         execution.complete(success: false)
       }
     }
+    lock.withLock { activeTask = task }
     execution.expirationHandler = { task.cancel() }
+  }
+}
+
+struct IosProcessingRequest: Equatable, Sendable {
+  let identifier: String
+  let requiresNetworkConnectivity: Bool
+  let requiresExternalPower: Bool
+}
+
+protocol IosProcessingTaskBoundary: AnyObject {
+  func register(identifier: String, launch: @escaping (IosBackgroundExecution) -> Void)
+  func submit(_ request: IosProcessingRequest) throws
+  func cancel(identifier: String)
+}
+
+final class LiveIosProcessingTaskBoundary: IosProcessingTaskBoundary {
+  func register(identifier: String, launch: @escaping (IosBackgroundExecution) -> Void) {
+    BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { task in
+      guard let processing = task as? BGProcessingTask else {
+        task.setTaskCompleted(success: false)
+        return
+      }
+      launch(LiveIosProcessingExecution(task: processing))
+    }
+  }
+
+  func submit(_ request: IosProcessingRequest) throws {
+    let native = BGProcessingTaskRequest(identifier: request.identifier)
+    native.requiresNetworkConnectivity = request.requiresNetworkConnectivity
+    native.requiresExternalPower = request.requiresExternalPower
+    try BGTaskScheduler.shared.submit(native)
+  }
+
+  func cancel(identifier: String) {
+    BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: identifier)
+  }
+}
+
+private final class LiveIosProcessingExecution: IosBackgroundExecution, @unchecked Sendable {
+  private let task: BGProcessingTask
+
+  init(task: BGProcessingTask) { self.task = task }
+
+  var expirationHandler: (() -> Void)? {
+    get { task.expirationHandler }
+    set { task.expirationHandler = newValue }
+  }
+
+  func complete(success: Bool) { task.setTaskCompleted(success: success) }
+}
+
+final class IosFileUploadScheduler: @unchecked Sendable {
+  static let identifier = "com.ratatoskr.mobile.file-upload.processing"
+  static let externalPowerThresholdBytes: Int64 = 32 * 1_024 * 1_024
+
+  init(
+    boundary: IosProcessingTaskBoundary,
+    store: IosFileUploadStateStore = UserDefaultsFileUploadStateStore(),
+    lowPowerMode: @escaping () -> Bool,
+    drain: @escaping () async throws -> Void
+  ) {
+    self.boundary = boundary
+    self.store = store
+    self.lowPowerMode = lowPowerMode
+    self.drain = drain
+  }
+
+  func start() {
+    boundary.register(identifier: Self.identifier) { [weak self] execution in
+      self?.handle(execution)
+    }
+  }
+
+  func schedule(sizeBytes: Int64) {
+    store.pendingSizeBytes = sizeBytes
+    try? boundary.submit(
+      IosProcessingRequest(
+        identifier: Self.identifier,
+        requiresNetworkConnectivity: true,
+        requiresExternalPower: sizeBytes > Self.externalPowerThresholdBytes
+      ))
+  }
+
+  func sceneActivated() {
+    guard let sizeBytes = store.pendingSizeBytes else { return }
+    schedule(sizeBytes: sizeBytes)
+  }
+
+  func cancelAll() {
+    lock.withLock {
+      activeTask?.cancel()
+      activeTask = nil
+      store.pendingSizeBytes = nil
+      boundary.cancel(identifier: Self.identifier)
+    }
+  }
+
+  private let boundary: IosProcessingTaskBoundary
+  private let store: IosFileUploadStateStore
+  private let lowPowerMode: () -> Bool
+  private let drain: () async throws -> Void
+  private let lock = NSLock()
+  private var activeTask: Task<Void, Never>?
+
+  private func handle(_ execution: IosBackgroundExecution) {
+    if lowPowerMode() {
+      execution.complete(success: true)
+      return
+    }
+    let task = Task {
+      do {
+        try await drain()
+        store.pendingSizeBytes = nil
+        execution.complete(success: true)
+      } catch {
+        execution.complete(success: false)
+      }
+    }
+    lock.withLock { activeTask = task }
+    execution.expirationHandler = { task.cancel() }
+  }
+}
+
+protocol IosFileUploadStateStore: AnyObject {
+  var pendingSizeBytes: Int64? { get set }
+}
+
+final class UserDefaultsFileUploadStateStore: IosFileUploadStateStore {
+  private let defaults: UserDefaults
+  private let key = "file-upload-pending-size-bytes"
+
+  init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+
+  var pendingSizeBytes: Int64? {
+    get {
+      guard defaults.object(forKey: key) != nil else { return nil }
+      return Int64(defaults.integer(forKey: key))
+    }
+    set {
+      if let newValue {
+        defaults.set(newValue, forKey: key)
+      } else {
+        defaults.removeObject(forKey: key)
+      }
+    }
   }
 }

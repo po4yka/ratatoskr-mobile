@@ -70,4 +70,25 @@ class ShareStagingUiTest {
         compose.onNodeWithText("Safely queued. Ratatoskr will submit it when online.").assertIsDisplayed()
         compose.onNodeWithText("local-1", substring = true).assertDoesNotExist()
     }
+
+    @Test
+    fun file_preview_shows_upload_impact_and_integration_pending() {
+        val file = ShareIntake.File("artifact-1", "synthetic.pdf", "application/pdf", 18, "a".repeat(64))
+        compose.setContent {
+            ShareStagingSurface(
+                ShareStagingState.Ready(
+                    originalText = file.displayName,
+                    url = null,
+                    canSubmit = true,
+                    message = "File submission is integration pending; the queued file stays local.",
+                    file = file,
+                ),
+                dispatch = {},
+            )
+        }
+
+        compose.onNodeWithText("synthetic.pdf").assertIsDisplayed()
+        compose.onNodeWithText("18 bytes", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("integration pending", substring = true, ignoreCase = true).assertIsDisplayed()
+    }
 }

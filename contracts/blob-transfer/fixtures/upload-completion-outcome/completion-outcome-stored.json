@@ -1,0 +1,12 @@
+{
+  "outcome": "stored",
+  "blob_ref": {
+    "owner_service": "ratatoskr-extractor",
+    "digest": {
+      "algorithm": "sha256",
+      "hex": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "media_type": "image/jpeg",
+    "length_bytes": 200000
+  }
+}

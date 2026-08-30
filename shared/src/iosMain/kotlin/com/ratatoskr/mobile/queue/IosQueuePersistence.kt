@@ -10,6 +10,15 @@ import platform.Foundation.NSFileProtectionKey
 fun createIosQueuePersistence(path: String): QueuePersistence =
     createIosQueuePersistence(path, IosQueueFileProtector(::protectIosQueueFile))
 
+@OptIn(ExperimentalForeignApi::class)
+fun deleteIosQueueStore(path: String): Boolean {
+    val manager = NSFileManager.defaultManager
+    listOf(path, "$path-wal", "$path-shm").forEach { file ->
+        if (manager.fileExistsAtPath(file)) manager.removeItemAtPath(file, null)
+    }
+    return listOf(path, "$path-wal", "$path-shm").none(manager::fileExistsAtPath)
+}
+
 internal fun createIosQueuePersistence(
     path: String,
     fileProtector: IosQueueFileProtector,

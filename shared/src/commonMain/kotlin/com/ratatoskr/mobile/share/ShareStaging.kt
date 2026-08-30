@@ -31,6 +31,7 @@ sealed interface ShareStagingState {
         val url: String?,
         val canSubmit: Boolean,
         val message: String?,
+        val file: ShareIntake.File? = null,
     ) : ShareStagingState
 
     data object Saving : ShareStagingState
@@ -97,7 +98,18 @@ class ShareStagingStore(
 
     private fun confirm() {
         val ready = mutableState.value as? ShareStagingState.Ready ?: return
-        val url = ready.url ?: return
+        val payload =
+            when (val intake = initialIntake) {
+                is ShareIntake.Url -> CapturePayload.Url(intake.url)
+                is ShareIntake.File ->
+                    CapturePayload.FileReference(
+                        stagedFileId = intake.stagedFileId,
+                        displayName = intake.displayName,
+                        mediaType = intake.mediaType,
+                        byteSize = intake.byteSize,
+                    )
+                is ShareIntake.UnsupportedText -> return
+            }
         val access = submissionAccess.value
         if (!ready.canSubmit || access != ShareSubmissionAccess.Available) {
             mutableState.value = initialIntake.readyState(access)
@@ -117,7 +129,7 @@ class ShareStagingStore(
                         CaptureRequest(
                             owner = currentOwner,
                             source = captureSource,
-                            payload = CapturePayload.Url(url),
+                            payload = payload,
                             createdAt = captureCreatedAt ?: clock.now(),
                         ),
                         idempotencyKey = idempotencyKey,
@@ -128,13 +140,19 @@ class ShareStagingStore(
                     onFailure()
                 }
                 is QueueResult.Success -> {
+                    val isFile = initialIntake is ShareIntake.File
                     mutableState.value =
                         ShareStagingState.Queued(
                             localId = result.value.localId,
-                            message = "Safely queued. Ratatoskr will submit it when online.",
+                            message =
+                                if (isFile) {
+                                    "Safely queued locally. File submission is integration pending."
+                                } else {
+                                    "Safely queued. Ratatoskr will submit it when online."
+                                },
                         )
                     onCommitted(result.value)
-                    runCatching { scheduler.schedule(result.value.nextEligibleAt) }
+                    if (!isFile) runCatching { scheduler.schedule(result.value.nextEligibleAt) }
                 }
             }
         }
@@ -155,6 +173,19 @@ class ShareStagingStore(
                     url = null,
                     canSubmit = false,
                     message = "Platform does not currently accept plain text captures.",
+                )
+            is ShareIntake.File ->
+                ShareStagingState.Ready(
+                    originalText = displayName,
+                    url = null,
+                    canSubmit = access == ShareSubmissionAccess.Available,
+                    message =
+                        if (access == ShareSubmissionAccess.Available) {
+                            "File submission is integration pending; the queued file stays local."
+                        } else {
+                            access.message()
+                        },
+                    file = this,
                 )
         }
 

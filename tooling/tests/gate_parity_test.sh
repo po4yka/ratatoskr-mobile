@@ -119,6 +119,27 @@ for marker in "${github_gate_markers[@]}"; do
     assert_in_file "$workflow" "$marker" "ci_runs_github_contract_state_and_surface_tests"
 done
 
+file_lifecycle_gate_markers=(
+    './tooling/tests/blob_transfer_contract_drift_test.sh'
+    'BlobTransferContractTest'
+    'ResumableUploadCoordinatorTest'
+    'ArtifactRetentionPolicyTest'
+    'TransferSchedulingPolicyTest'
+    'LocalDataErasureCoordinatorTest'
+    'AndroidStagedArtifactStoreTest'
+    'FileUploadWorkerTest'
+    'AndroidLocalDataErasureInstrumentedTest'
+    'LocalStorageUiTest'
+    'IosFileUploadSchedulerTests'
+    'IosLocalDataErasureTests'
+    'IosLocalStorageSurfaceSmokeTests'
+)
+
+for marker in "${file_lifecycle_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_file_transfer_retention_and_erasure"
+    assert_in_file "$workflow" "$marker" "ci_runs_file_transfer_retention_and_erasure"
+done
+
 if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_shared_tests"
     echo "ok - documented_gate_matches_ci"
@@ -127,6 +148,7 @@ if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_ios_share_status_and_smoke"
     echo "ok - ci_runs_library_contract_and_state_tests"
     echo "ok - ci_runs_github_contract_state_and_surface_tests"
+    echo "ok - ci_runs_file_transfer_retention_and_erasure"
 fi
 
 exit "$failures"

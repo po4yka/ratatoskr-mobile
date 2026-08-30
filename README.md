@@ -5,10 +5,10 @@
 > **Status:** architecture bootstrap. Buildable Android and iOS application shells host a shared
 > Compose Multiplatform pairing surface. Generated public Platform types back the implemented
 > device-pairing, rotating-session, revocation, and capability-discovery client, plus shared
-> capture models, durable queue persistence, and operation projection. Android URL sharing now has
-> native `ACTION_SEND` intake, shared Compose staging/status UI, WorkManager submission, and
-> privacy-safe operation notifications. iOS URL/text sharing now has a minimal native Share
-> Extension, atomic App Group handoff, shared Compose confirmation/status, and Room queue
+> capture models, durable queue persistence, and operation projection. Android URL/file sharing has
+> bounded native `ACTION_SEND` intake, shared Compose staging/status UI, WorkManager wakeups, and
+> privacy-safe operation notifications. iOS URL/text/file sharing has a minimal native Share
+> Extension, atomic protected App Group handoff, shared Compose confirmation/status, and Room queue
 > submission. Live recent analyses/read-state plus an explicitly unsynchronized contract-fixture
 > reader/curation preview are available in shared Compose. Capability-gated GitHub fixture
 > browse/search, live Platform preview, and explicitly confirmed metadata/track/star actions are
@@ -162,6 +162,9 @@ Rules:
 - user content is never silently discarded;
 - cancellation is explicit;
 - temporary file copies have clear retention;
+- one explicitly shared PDF, JPEG, PNG, or plain-text file is streamed into protected app-owned
+  staging with bounded retention; resumable delivery remains visibly integration-pending until the
+  public Platform receipt binding exists;
 - app restarts and device reboots do not duplicate accepted operations.
 
 ## Source-specific flows
@@ -378,14 +381,16 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan items 1 through 7 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+Plan items 1 through 8 are implemented at repository level: Android/iOS shells, the shared/native ADR,
 pinned generated Platform models, device pairing/session behavior, native secure storage,
 capability discovery, bounded capture/queue models, Room KMP persistence, Android URL share intake,
 offline submission, iOS Share Extension handoff, operation status, generic notifications, live
 recent/read-state library access, strict content routing, fixture readers/curation,
-capability-gated GitHub fixture discovery and confirmed Platform actions, and lint/test/build CI exist. Evidence
+capability-gated GitHub fixture discovery and confirmed Platform actions, protected file staging,
+resumable contract behavior, bounded retention, native scheduling, replay-safe local erasure, and
+lint/test/build CI exist. Evidence
 covers deterministic transport and queue tests, Android Emulator Keystore/Room/share smoke,
 app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not prove live
 Platform pairing/submission/GitHub actions or full reader/curation, a physical-device run,
 signing/provisioning, provider integration, Vault completion, universal links, physical-device
-queue protection, or staged-file lifecycle.
+queue protection/background delivery, or a live public file receipt binding.

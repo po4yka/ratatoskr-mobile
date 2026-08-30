@@ -2,16 +2,21 @@
 
 ## Android
 
-The implemented Share Target exports the thin Android Activity for `ACTION_SEND text/plain`. The
-native parser accepts exactly one bounded `http`/`https` URL, preserves original text for shared
-Compose preview, and refuses plain text, multiple URLs, hostile schemes, oversized input, and other
-actions. `ACTION_SEND_MULTIPLE`, content URIs, persistable grants, and files are not implemented.
+The Share Target exports the thin Android Activity for reviewed `ACTION_SEND` text and file MIME
+types. It accepts one bounded `http`/`https` URL or one grant-bounded `content://` file, preserves
+original display data for shared Compose preview, and refuses ambiguous, multiple, hostile,
+oversized, unreadable, or mismatched inputs. Persistable external authority is never queued.
 
 Confirmation persists through shared `CaptureQueue` before the native WorkManager adapter receives
 a content-free unique-work request. Confirmation and worker drain fail closed unless the current
 paired session has a fresh `content.submit` capability. The worker consumes authorization from
 Keystore-backed storage and derives payload, idempotency, retry time, and operation binding from the
 queue. The Activity is not a source of background truth.
+
+File adapters accept one reviewed MIME type, copy and hash while external authority is valid, and
+hand only an opaque staged ID to shared KMP. The shared coordinator uses the pinned digest-first
+contract through `BlobReceiptTransport`; production is `IntegrationPending` and never guesses an
+internal endpoint. WorkManager/BGProcessing carry wake metadata only and re-read durable queue state.
 
 Generic notifications contain no capture content. Their immutable explicit intent contains only a
 validated operation UUID and routes into shared operation detail; the authenticated Platform read
@@ -53,7 +58,7 @@ means policy accepted for publication, never that Vault completed a backup.
 
 ## Rules
 
-Inbound content is type/size/count/time bounded; future file access must be copied before source
+Inbound content is type/size/count/time bounded; file bytes are copied before source
 permission expires. KMP owns Compose/UDF presentation, pure models, queue policy, and public API
 adapters, while native adapters own lifecycle, secure storage, WorkManager, and notifications. Deep
 links are allowlisted and do not carry secrets. Errors distinguish invalid input, offline,

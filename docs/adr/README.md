@@ -9,8 +9,8 @@ Accepted:
 - ADR-0003: [iOS Share Extension and App Group handoff](0003-ios-share-extension.md).
 - ADR-0004: [Durable offline capture queue and idempotency](0004-durable-offline-capture-queue.md).
 - ADR-0005: [Keystore/Keychain device authentication](0005-keystore-keychain-device-authentication.md).
+- ADR-0006: [Resumable file transfer and replay-safe local erasure](0006-resumable-file-transfer-and-local-erasure.md).
 
 Initial backlog:
 
-- ADR-0006: Staged-file retention and background upload.
 - ADR-0007: External-write confirmation and broader link routing.

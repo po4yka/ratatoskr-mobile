@@ -38,7 +38,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json', 'contracts/github/ratatoskr-contracts.lock.json') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json', 'contracts/github/ratatoskr-contracts.lock.json', 'contracts/blob-transfer/ratatoskr-contracts.lock.json') }}
 
       - name: Install Android SDK platform
         run: |
@@ -67,13 +67,17 @@ jobs:
         run: ./tooling/contracts/check.sh
 
       - name: Contract mutation and generated-tree tests
-        run: ./tooling/tests/contract_drift_test.sh
+        run: |
+          ./tooling/tests/contract_drift_test.sh
+          ./tooling/tests/blob_transfer_contract_drift_test.sh
 
       - name: >-
           Shared Android tests including CaptureQueueIdempotencyTest, PlatformLibraryApiTest,
           LibraryListStoreTest, FixtureUserContentRepositoryTest, LibraryReaderStoreTest,
           ContentRouteTableTest, GithubContractCodecTest, PlatformGithubApiTest,
           GithubCatalogStoreTest, GithubConfirmationStoreTest, GithubActionOutcomeStoreTest,
+          BlobTransferContractTest, ResumableUploadCoordinatorTest, ArtifactRetentionPolicyTest,
+          TransferSchedulingPolicyTest, LocalDataErasureCoordinatorTest,
           and Android build
         run: ./gradlew --no-daemon :shared:testDebugUnitTest :androidApp:assembleDebug
 
@@ -81,7 +85,8 @@ jobs:
           Android Keystore, AndroidCaptureQueuePersistenceTest, AndroidShareIntentParserTest,
           ShareStagingUiTest, CaptureSubmissionWorkerTest, OperationStatusUiTest,
           CaptureStatusNotificationTest, AndroidShareSmokeTest, LibraryDeepLinkIntentTest,
-          LibraryUiTest, and GithubCatalogUiTest instrumentation
+          LibraryUiTest, GithubCatalogUiTest, AndroidStagedArtifactStoreTest,
+          FileUploadWorkerTest, AndroidLocalDataErasureInstrumentedTest, and LocalStorageUiTest instrumentation
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
@@ -134,7 +139,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.konan
-          key: apple-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json', 'contracts/github/ratatoskr-contracts.lock.json') }}
+          key: apple-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'contracts/platform-openapi.lock.json', 'contracts/github/ratatoskr-contracts.lock.json', 'contracts/blob-transfer/ratatoskr-contracts.lock.json') }}
 
       - name: Swift format and lint
         run: swift format lint --recursive --strict iosApp
@@ -151,6 +156,7 @@ jobs:
       - name: >-
           ShareExtensionParserTests, AppGroupEnvelopeTests, AppGroupInboxImporterTests,
           IosKeychainCredentialStorageTests, IosSubmissionSchedulerTests,
+          IosFileUploadSchedulerTests, IosLocalDataErasureTests, IosLocalStorageSurfaceSmokeTests,
           IosSubmissionStatusFlowTests, IosShareSmokeTests, and IosLibraryRoutingTests
         run: |
           simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"

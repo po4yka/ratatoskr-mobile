@@ -18,3 +18,14 @@ fun createAndroidQueuePersistence(
         ),
     )
 }
+
+fun deleteAndroidQueueStore(
+    context: Context,
+    name: String = "ratatoskr-capture-queue.db",
+): Boolean {
+    val appContext = context.applicationContext
+    val database = appContext.getDatabasePath(name)
+    val files = listOf(database, java.io.File("${database.path}-wal"), java.io.File("${database.path}-shm"))
+    if (files.any { it.exists() }) appContext.deleteDatabase(name)
+    return files.none { it.exists() }
+}

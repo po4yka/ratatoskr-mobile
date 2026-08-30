@@ -103,6 +103,95 @@ final class IosSubmissionSchedulerTests: XCTestCase {
   }
 }
 
+final class IosFileUploadSchedulerTests: XCTestCase {
+  func testUsesProcessingNetworkAndLargeFilePowerConstraints() {
+    let boundary = FakeProcessingBoundary()
+    let scheduler = IosFileUploadScheduler(
+      boundary: boundary, store: MemoryFileUploadStateStore(), lowPowerMode: { false }, drain: {})
+
+    scheduler.schedule(sizeBytes: IosFileUploadScheduler.externalPowerThresholdBytes + 1)
+
+    XCTAssertEqual(
+      boundary.requests,
+      [
+        IosProcessingRequest(
+          identifier: IosFileUploadScheduler.identifier,
+          requiresNetworkConnectivity: true,
+          requiresExternalPower: true
+        )
+      ]
+    )
+  }
+
+  func testLowPowerModeDefersBeforeClaim() async {
+    let boundary = FakeProcessingBoundary()
+    let drain = VoidDrainSpy()
+    let scheduler = IosFileUploadScheduler(
+      boundary: boundary,
+      store: MemoryFileUploadStateStore(),
+      lowPowerMode: { true },
+      drain: drain.call
+    )
+    scheduler.start()
+    guard let launch = boundary.launch else { return XCTFail("processing handler missing") }
+    let execution = FakeExecution()
+
+    launch(execution)
+    await execution.waitForCompletion()
+
+    XCTAssertEqual(drain.calls, 0)
+    XCTAssertEqual(execution.success, true)
+  }
+
+  func testExpirationCancelsStreamAndPreservesCheckpoint() async {
+    let boundary = FakeProcessingBoundary()
+    let drain = VoidDrainSpy { try await Task.neverVoid() }
+    let scheduler = IosFileUploadScheduler(
+      boundary: boundary,
+      store: MemoryFileUploadStateStore(),
+      lowPowerMode: { false },
+      drain: drain.call
+    )
+    scheduler.start()
+    guard let launch = boundary.launch else { return XCTFail("processing handler missing") }
+    let execution = FakeExecution()
+
+    launch(execution)
+    await drain.waitUntilCalled()
+    execution.expirationHandler?()
+    await execution.waitForCompletion()
+
+    XCTAssertTrue(drain.wasCancelled)
+    XCTAssertEqual(drain.checkpoint, "receiver-checkpoint")
+    XCTAssertEqual(execution.success, false)
+  }
+
+  func testForegroundActivationRepairsMissingProcessingRequest() {
+    let boundary = FakeProcessingBoundary()
+    let scheduler = IosFileUploadScheduler(
+      boundary: boundary, store: MemoryFileUploadStateStore(), lowPowerMode: { false }, drain: {})
+    scheduler.schedule(sizeBytes: 1_024)
+    boundary.requests.removeAll()
+
+    scheduler.sceneActivated()
+
+    XCTAssertEqual(
+      boundary.requests,
+      [
+        IosProcessingRequest(
+          identifier: IosFileUploadScheduler.identifier,
+          requiresNetworkConnectivity: true,
+          requiresExternalPower: false
+        )
+      ]
+    )
+  }
+}
+
+private final class MemoryFileUploadStateStore: IosFileUploadStateStore {
+  var pendingSizeBytes: Int64?
+}
+
 private struct Fixture {
   let scheduler: IosSubmissionScheduler
   let boundary: FakeBoundary
@@ -174,6 +263,42 @@ private final class DrainSpy {
   }
 }
 
+private final class FakeProcessingBoundary: IosProcessingTaskBoundary {
+  var launch: ((IosBackgroundExecution) -> Void)?
+  var requests: [IosProcessingRequest] = []
+
+  func register(identifier: String, launch: @escaping (IosBackgroundExecution) -> Void) {
+    self.launch = launch
+  }
+
+  func submit(_ request: IosProcessingRequest) throws { requests.append(request) }
+
+  func cancel(identifier: String) {}
+}
+
+private final class VoidDrainSpy {
+  private let result: () async throws -> Void
+  private(set) var calls = 0
+  private(set) var wasCancelled = false
+  private(set) var checkpoint = "receiver-checkpoint"
+
+  init(result: @escaping () async throws -> Void = {}) { self.result = result }
+
+  func call() async throws {
+    calls += 1
+    do {
+      try await result()
+    } catch is CancellationError {
+      wasCancelled = true
+      throw CancellationError()
+    }
+  }
+
+  func waitUntilCalled() async {
+    while calls == 0 { await Task.yield() }
+  }
+}
+
 extension Date {
   fileprivate var epochMilliseconds: Int64 { Int64(timeIntervalSince1970 * 1_000) }
 }
@@ -184,6 +309,16 @@ extension Task where Success == Never, Failure == Never {
       while !Task.isCancelled { await Task.yield() }
       try Task.checkCancellation()
       return nil
+    } onCancel: {
+    }
+  }
+}
+
+extension Task where Success == Never, Failure == Never {
+  fileprivate static func neverVoid() async throws {
+    try await withTaskCancellationHandler {
+      while !Task.isCancelled { await Task.yield() }
+      try Task.checkCancellation()
     } onCancel: {
     }
   }

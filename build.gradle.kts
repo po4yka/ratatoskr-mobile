@@ -116,3 +116,174 @@ tasks.register<JavaExec>("generateContracts") {
         }
     }
 }
+
+val blobTransferContracts = providers.gradleProperty("blobTransferContracts").orElse(
+    layout.projectDirectory.dir("contracts/blob-transfer").asFile.absolutePath,
+)
+val blobTransferOutput = providers.gradleProperty("blobTransferOutput").orElse(
+    layout.projectDirectory
+        .dir("shared/src/commonMain/kotlin/com/ratatoskr/mobile/transfer/generated")
+        .asFile.absolutePath,
+)
+
+tasks.register("generateBlobTransferContracts") {
+    group = "contracts"
+    description = "Generate Kotlin wire models from the pinned blob-transfer JSON Schemas."
+    inputs.files(fileTree(file(blobTransferContracts.get()).resolve("schemas")) { include("*.json") })
+    outputs.dir(blobTransferOutput)
+
+    doLast {
+        val schemaRoot = file(blobTransferContracts.get()).resolve("schemas")
+        fun schema(fileName: String): Map<String, Any?> {
+            @Suppress("UNCHECKED_CAST")
+            return JsonSlurper().parse(schemaRoot.resolve(fileName)) as Map<String, Any?>
+        }
+
+        val sourceSchemas =
+            linkedMapOf(
+                "UploadSessionRequest" to schema("upload-session-request.v1.schema.json"),
+                "UploadSessionOpened" to schema("upload-session-opened.v1.schema.json"),
+                "UploadChunkReceipt" to schema("upload-chunk-receipt.v1.schema.json"),
+                "UploadStatusResponse" to schema("upload-status-response.v1.schema.json"),
+                "UploadFinalizeRequest" to schema("upload-finalize-request.v1.schema.json"),
+                "UploadCompletionOutcome" to schema("upload-completion-outcome.v1.schema.json"),
+            )
+        sourceSchemas.forEach { (expectedTitle, document) ->
+            check(document["title"] == expectedTitle) {
+                "Schema title drifted: expected $expectedTitle, got ${document["title"]}"
+            }
+        }
+
+        fun camelCase(wireName: String): String =
+            wireName.split('_').mapIndexed { index, part ->
+                if (index == 0) part else part.replaceFirstChar(Char::uppercase)
+            }.joinToString("")
+
+        fun refName(property: Map<String, Any?>): String? =
+            (property["\$ref"] as? String)?.substringAfterLast('/')
+
+        fun kotlinType(property: Map<String, Any?>): String {
+            refName(property)?.let { reference ->
+                return when (reference) {
+                    "BlobRef" -> "TransferBlobRef"
+                    "ContentDigest" -> "TransferContentDigest"
+                    "WireTimestamp" -> "kotlin.time.Instant"
+                    "BlobOwner",
+                    "DigestAlgorithm",
+                    "DigestHex",
+                    "MediaType",
+                    "UploadResumptionToken",
+                    "UploadSessionState",
+                    -> "String"
+                    else -> error("Unsupported blob-transfer schema reference: $reference")
+                }
+            }
+            return when (property["type"] as? String) {
+                "boolean" -> "Boolean"
+                "integer" -> if (property["format"] == "uint64") "Long" else "Int"
+                "string" -> if (property["format"] == "date-time") "kotlin.time.Instant" else "String"
+                "array" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val items = property["items"] as? Map<String, Any?>
+                        ?: error("Array schema is missing items")
+                    "List<${kotlinType(items)}>"
+                }
+                else -> {
+                    val stringConstants =
+                        (property["oneOf"] as? List<*>)?.mapNotNull { variant ->
+                            (variant as? Map<*, *>)?.takeIf { it["type"] == "string" }?.get("const")
+                        }
+                    if (!stringConstants.isNullOrEmpty()) "String"
+                    else error("Unsupported blob-transfer property schema: $property")
+                }
+            }
+        }
+
+        data class ObjectShape(
+            val properties: LinkedHashMap<String, Map<String, Any?>>,
+            val required: Set<String>,
+        )
+
+        fun objectShape(schema: Map<String, Any?>): ObjectShape {
+            @Suppress("UNCHECKED_CAST")
+            val variants = schema["oneOf"] as? List<Map<String, Any?>>
+            if (variants != null) {
+                check(variants.isNotEmpty()) { "oneOf object must have variants" }
+                val properties = linkedMapOf<String, Map<String, Any?>>()
+                variants.forEach { variant ->
+                    check(variant["type"] == "object") { "Only object unions can become wire DTOs" }
+                    @Suppress("UNCHECKED_CAST")
+                    val variantProperties = variant["properties"] as? Map<String, Map<String, Any?>>
+                        ?: error("Object union variant is missing properties")
+                    variantProperties.forEach { (name, property) ->
+                        val previous = properties.putIfAbsent(name, property)
+                        check(previous == null || kotlinType(previous) == kotlinType(property)) {
+                            "Union property $name has incompatible variants"
+                        }
+                    }
+                }
+                val required = variants
+                    .map { variant -> (variant["required"] as? List<*>)?.filterIsInstance<String>()?.toSet().orEmpty() }
+                    .reduce(Set<String>::intersect)
+                return ObjectShape(LinkedHashMap(properties), required)
+            }
+
+            check(schema["type"] == "object" || schema["properties"] != null) {
+                "Only JSON objects can become wire DTOs"
+            }
+            @Suppress("UNCHECKED_CAST")
+            val properties = schema["properties"] as? Map<String, Map<String, Any?>>
+                ?: error("Object schema is missing properties")
+            val required = (schema["required"] as? List<*>)?.filterIsInstance<String>()?.toSet().orEmpty()
+            check(required.all(properties::containsKey)) { "Required field is absent from properties" }
+            return ObjectShape(LinkedHashMap(properties), required)
+        }
+
+        fun renderClass(className: String, schema: Map<String, Any?>): String {
+            val shape = objectShape(schema)
+            val fields = shape.properties.entries.joinToString("\n") { (wireName, property) ->
+                val required = wireName in shape.required
+                val type = kotlinType(property) + if (required) "" else "?"
+                val annotation = if (required) " @Required" else ""
+                val defaultValue = if (required) "" else " = null"
+                "    @SerialName(\"$wireName\")$annotation val ${camelCase(wireName)}: $type$defaultValue,"
+            }
+            return """|@Serializable
+                      |data class $className(
+                      |$fields
+                      |)
+                   """.trimMargin()
+        }
+
+        val packageHeader =
+            """|// Generated from pinned ratatoskr-contracts JSON Schemas. DO NOT EDIT.
+               |package com.ratatoskr.mobile.transfer.generated
+               |
+               |import kotlinx.serialization.Required
+               |import kotlinx.serialization.SerialName
+               |import kotlinx.serialization.Serializable
+               |
+            """.trimMargin()
+
+        @Suppress("UNCHECKED_CAST")
+        val completionDefinitions = sourceSchemas.getValue("UploadCompletionOutcome")["\$defs"]
+            as? Map<String, Map<String, Any?>>
+            ?: error("UploadCompletionOutcome definitions are missing")
+        val generated =
+            linkedMapOf(
+                "TransferValueTypes.kt" to
+                    """|$packageHeader
+                       |${renderClass("TransferContentDigest", completionDefinitions.getValue("ContentDigest"))}
+                       |
+                       |${renderClass("TransferBlobRef", completionDefinitions.getValue("BlobRef"))}
+                    """.trimMargin(),
+            )
+        sourceSchemas.forEach { (className, schema) ->
+            generated["$className.kt"] = packageHeader + "\n" + renderClass(className, schema)
+        }
+        val output = file(blobTransferOutput.get())
+        output.mkdirs()
+        output.listFiles()?.filter { it.isFile && it.extension == "kt" }?.forEach { it.delete() }
+        generated.forEach { (name, content) -> output.resolve(name).writeText(content.trimEnd() + "\n") }
+    }
+}

@@ -12,11 +12,19 @@ import com.ratatoskr.mobile.library.ContentRouteResult
 import com.ratatoskr.mobile.library.ContentRouteTable
 import com.ratatoskr.mobile.library.routeIdOrNull
 import com.ratatoskr.mobile.operation.OperationListStore
+import com.ratatoskr.mobile.share.AndroidFileIntakeResult
 import com.ratatoskr.mobile.share.AndroidShareIntentParser
+import com.ratatoskr.mobile.share.AndroidStagingFailure
+import com.ratatoskr.mobile.share.AndroidStagingResult
+import com.ratatoskr.mobile.share.ShareIntake
+import com.ratatoskr.mobile.share.ShareIntakeRejection
 import com.ratatoskr.mobile.share.ShareIntakeResult
 import com.ratatoskr.mobile.share.ShareIntakeResult.Accepted
 import com.ratatoskr.mobile.share.ShareIntakeResult.Rejected
 import com.ratatoskr.mobile.share.ShareStagingStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -53,6 +61,7 @@ class MainActivity : ComponentActivity() {
                 library = container.library,
                 github = container.github,
                 initialContentRoute = pendingContentRoute,
+                localStorageStore = container.localStorageStore,
             )
         }
     }
@@ -100,7 +109,11 @@ class MainActivity : ComponentActivity() {
             Intent.ACTION_SEND -> {
                 pendingOperationId = null
                 pendingContentRoute = null
-                pendingShareIntake = shareParser.parse(intent)
+                if (intent.hasExtra(Intent.EXTRA_STREAM)) {
+                    stageFileShare(intent)
+                } else {
+                    pendingShareIntake = shareParser.parse(intent)
+                }
             }
             ACTION_VIEW_OPERATION -> {
                 pendingShareIntake = null
@@ -108,6 +121,53 @@ class MainActivity : ComponentActivity() {
                 pendingOperationId = intent.getStringExtra(EXTRA_OPERATION_ID)?.let(::validatedOperationId)
             }
             Intent.ACTION_VIEW -> intent.dataString?.let(::acceptLibraryLink)
+        }
+    }
+
+    private fun stageFileShare(intent: Intent) {
+        when (val parsed = shareParser.parseFile(intent)) {
+            is AndroidFileIntakeResult.Rejected -> pendingShareIntake = Rejected(parsed.reason)
+            is AndroidFileIntakeResult.Candidate -> {
+                pendingShareIntake = null
+                lifecycleScope.launch {
+                    val staged =
+                        try {
+                            withContext(Dispatchers.IO) { container.artifactStore.stage(parsed.value) }
+                        } finally {
+                            runCatching {
+                                revokeUriPermission(parsed.value.uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                        }
+                    pendingShareIntake =
+                        when (staged) {
+                            is AndroidStagingResult.Staged ->
+                                Accepted(
+                                    ShareIntake.File(
+                                        stagedFileId = staged.artifact.artifactId,
+                                        displayName = staged.artifact.displayName,
+                                        mediaType = staged.artifact.mediaType,
+                                        byteSize = staged.artifact.sizeBytes,
+                                        sha256Hex = staged.artifact.sha256Hex,
+                                    ),
+                                )
+                            is AndroidStagingResult.Rejected ->
+                                Rejected(
+                                    when (staged.failure) {
+                                        AndroidStagingFailure.Oversized -> ShareIntakeRejection.OversizedFile
+                                        AndroidStagingFailure.CapacityExceeded ->
+                                            ShareIntakeRejection.StorageCapacityExceeded
+                                        AndroidStagingFailure.UnsupportedType,
+                                        AndroidStagingFailure.TypeMismatch,
+                                        -> ShareIntakeRejection.UnsafeFile
+                                        AndroidStagingFailure.Unreadable,
+                                        AndroidStagingFailure.Interrupted,
+                                        -> ShareIntakeRejection.UnreadableFile
+                                    },
+                                )
+                        }
+                    installPendingShare()
+                }
+            }
         }
     }
 

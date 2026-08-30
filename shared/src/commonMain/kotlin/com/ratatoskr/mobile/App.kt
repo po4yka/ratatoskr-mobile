@@ -64,6 +64,9 @@ import com.ratatoskr.mobile.share.ShareIntakeRejection
 import com.ratatoskr.mobile.share.ShareRejectionSurface
 import com.ratatoskr.mobile.share.ShareStagingStore
 import com.ratatoskr.mobile.share.ShareStagingSurface
+import com.ratatoskr.mobile.storage.LocalStorageRoute
+import com.ratatoskr.mobile.storage.LocalStorageStore
+import com.ratatoskr.mobile.storage.LocalStorageSurface
 import kotlinx.coroutines.launch
 
 @Composable
@@ -81,6 +84,7 @@ fun RatatoskrApp(
     library: LibraryApplicationGraph? = null,
     github: GithubApplicationGraph? = null,
     initialContentRoute: ContentRouteResult? = null,
+    localStorageStore: LocalStorageStore? = null,
 ) {
     val identityViewModel = viewModel { DeviceIdentityViewModel(sessionManager) }
     val state by identityViewModel.uiState.collectAsState()
@@ -291,6 +295,15 @@ fun RatatoskrApp(
                         LibraryReaderSurface(reader) { route = LibraryListRoute }
                     }
                 }
+                LocalStorageRoute -> {
+                    val store = localStorageStore
+                    if (store == null) {
+                        route = null
+                    } else {
+                        val storageState by store.state.collectAsState()
+                        LocalStorageSurface(storageState, store::dispatch) { route = null }
+                    }
+                }
                 else ->
                     IdentitySurface(
                         state,
@@ -298,6 +311,7 @@ fun RatatoskrApp(
                         onOpenOperations = { route = OperationListRoute },
                         onOpenLibrary = { route = LibraryListRoute },
                         onOpenGithub = github?.let { { route = GithubCatalogRoute } },
+                        onOpenStorage = localStorageStore?.let { { route = LocalStorageRoute } },
                     )
             }
         }
@@ -312,6 +326,7 @@ private fun IdentitySurface(
     onOpenOperations: () -> Unit = {},
     onOpenLibrary: () -> Unit = {},
     onOpenGithub: (() -> Unit)? = null,
+    onOpenStorage: (() -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -327,10 +342,9 @@ private fun IdentitySurface(
             is DeviceIdentityUiState.PairingForm -> PairingForm(state, dispatch)
             DeviceIdentityUiState.Working -> BasicText("Working…")
             is DeviceIdentityUiState.Paired ->
-                PairedSession(state, dispatch, onOpenOperations, onOpenLibrary, onOpenGithub)
+                PairedSession(state, dispatch, onOpenOperations, onOpenLibrary, onOpenGithub, onOpenStorage)
             DeviceIdentityUiState.RePairingRequired -> {
-                BasicText("This device session was revoked. Pair it again to continue.")
-                ActionButton("Pair again") { dispatch(DeviceIdentityAction.SignOut) }
+                BasicText("This device session was revoked and local data was erased. Restart Ratatoskr to pair again.")
             }
             is DeviceIdentityUiState.Failed -> BasicText(state.failure.safeMessage())
         }
@@ -376,6 +390,7 @@ private fun PairedSession(
     onOpenOperations: () -> Unit,
     onOpenLibrary: () -> Unit,
     onOpenGithub: (() -> Unit)?,
+    onOpenStorage: (() -> Unit)?,
 ) {
     BasicText("Paired with ${state.origin}")
     BasicText(if (state.capabilitiesFresh) "Capabilities are current" else "Capabilities are unavailable or stale")
@@ -386,6 +401,7 @@ private fun PairedSession(
     ActionButton("Operations", onClick = onOpenOperations)
     ActionButton("Library", onClick = onOpenLibrary)
     onOpenGithub?.let { ActionButton("GitHub repositories", onClick = it) }
+    onOpenStorage?.let { ActionButton("Local storage", onClick = it) }
     ActionButton("Sign out on this device") { dispatch(DeviceIdentityAction.SignOut) }
 }
 

@@ -1,6 +1,7 @@
 package com.ratatoskr.mobile.share
 
 import android.content.Intent
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -68,6 +69,32 @@ class AndroidShareIntentParserTest {
         cases.forEach { (intent, expected) ->
             assertEquals(ShareIntakeResult.Rejected(expected), parser.parse(intent))
         }
+    }
+
+    @Test
+    fun file_intent_matrix_is_bounded_and_unambiguous() {
+        val uri = Uri.parse("content://ratatoskr.test/synthetic.pdf")
+        val accepted =
+            Intent(Intent.ACTION_SEND)
+                .setType("application/pdf")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                .putExtra(Intent.EXTRA_STREAM, uri)
+        assertEquals(
+            AndroidFileIntakeResult.Candidate(AndroidFileCandidate(uri, "application/pdf")),
+            parser.parseFile(accepted),
+        )
+        assertEquals(
+            AndroidFileIntakeResult.Rejected(ShareIntakeRejection.AmbiguousShare),
+            parser.parseFile(Intent(accepted).putExtra(Intent.EXTRA_TEXT, "https://example.test")),
+        )
+        assertEquals(
+            AndroidFileIntakeResult.Rejected(ShareIntakeRejection.MissingReadGrant),
+            parser.parseFile(Intent(accepted).setFlags(0)),
+        )
+        assertEquals(
+            AndroidFileIntakeResult.Rejected(ShareIntakeRejection.UnsupportedMimeType),
+            parser.parseFile(Intent(accepted).setType("text/html")),
+        )
     }
 
     private fun shareText(value: String): Intent =

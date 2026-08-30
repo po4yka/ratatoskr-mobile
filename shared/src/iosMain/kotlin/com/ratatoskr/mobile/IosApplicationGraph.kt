@@ -37,11 +37,19 @@ import com.ratatoskr.mobile.share.CurrentCaptureOwner
 import com.ratatoskr.mobile.share.ShareIntake
 import com.ratatoskr.mobile.share.ShareStagingStore
 import com.ratatoskr.mobile.share.ShareSubmissionAccess
+import com.ratatoskr.mobile.storage.ArtifactCleanupCoordinator
+import com.ratatoskr.mobile.storage.ArtifactRetentionPolicy
+import com.ratatoskr.mobile.storage.ClearDataResult
+import com.ratatoskr.mobile.storage.IosArtifactLedger
+import com.ratatoskr.mobile.storage.LocalStorageAction
+import com.ratatoskr.mobile.storage.LocalStorageState
+import com.ratatoskr.mobile.storage.LocalStorageStore
 import com.ratatoskr.mobile.submission.CaptureSubmissionCoordinator
 import com.ratatoskr.mobile.submission.DeviceAuthorizedRequestExecutor
 import com.ratatoskr.mobile.submission.KtorPlatformCaptureApi
 import com.ratatoskr.mobile.submission.SubmissionDrainResult
 import com.ratatoskr.mobile.submission.SubmissionScheduler
+import com.ratatoskr.mobile.transfer.FileTransferAvailability
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import kotlinx.coroutines.CoroutineScope
@@ -56,6 +64,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import platform.Foundation.NSUUID
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -145,7 +154,23 @@ class IosApplicationController(
     queuePath: String,
     keychainAccessGroup: String,
     private val scheduleNativeWake: (Long?) -> Unit,
+    onProvenRevocation: () -> Unit,
+    localArtifactRoots: List<String>,
+    eraseLocalData: () -> Boolean,
 ) {
+    constructor(
+        queuePath: String,
+        keychainAccessGroup: String,
+        scheduleNativeWake: (Long?) -> Unit,
+    ) : this(
+        queuePath,
+        keychainAccessGroup,
+        scheduleNativeWake,
+        {},
+        listOf(queuePath.substringBeforeLast('/') + "/ratatoskr-staging"),
+        { false },
+    )
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val clock = QueueClock { now() }
     private val client = HttpClient(Darwin) { followRedirects = false }
@@ -153,6 +178,7 @@ class IosApplicationController(
         DeviceSessionManager(
             api = KtorPlatformIdentityApi(client),
             storage = IosKeychainCredentialStorage(accessGroup = keychainAccessGroup),
+            onProvenRevocation = { onProvenRevocation() },
         )
     private val submissionAccess: StateFlow<ShareSubmissionAccess> =
         combine(sessions.state, sessions.capabilities) { identity, capabilities ->
@@ -170,6 +196,25 @@ class IosApplicationController(
             clock = clock,
             keyGenerator = QueueKeyGenerator { NSUUID.UUID().UUIDString.lowercase() },
             jitter = QueueJitter { Random.nextDouble() },
+        )
+    private val artifactLedger = IosArtifactLedger(queue, localArtifactRoots)
+    private val artifactCleanup = ArtifactCleanupCoordinator(artifactLedger)
+    val localStorageStore =
+        LocalStorageStore(
+            initialUsage = ArtifactRetentionPolicy().usage(runBlocking { artifactLedger.inventory() }),
+            availability = FileTransferAvailability.IntegrationPending,
+            cleanup = { artifactCleanup.cleanup(clock.now()).usage },
+            erasure = { confirmed ->
+                if (!confirmed) {
+                    ClearDataResult.Cancelled
+                } else if (eraseLocalData()) {
+                    sessions.signOut()
+                    ClearDataResult.Completed(NSUUID.UUID().UUIDString.lowercase())
+                } else {
+                    ClearDataResult.Failed(NSUUID.UUID().UUIDString.lowercase())
+                }
+            },
+            scope = scope,
         )
     private val scheduler = SubmissionScheduler { instant -> scheduleNativeWake(instant?.toEpochMilliseconds()) }
     private val authorizedRequests = DeviceAuthorizedRequestExecutor(sessions)
@@ -250,6 +295,10 @@ class IosApplicationController(
 
     fun pendingLibraryRouteId(): String? = libraryRoute.value?.routeIdOrNull()
 
+    fun localStorageState(): LocalStorageState = localStorageStore.state.value
+
+    fun dispatchLocalStorage(action: LocalStorageAction) = localStorageStore.dispatch(action)
+
     fun start() {
         scope.launch {
             sessions.restore()
@@ -276,6 +325,50 @@ class IosApplicationController(
         shareStore.value =
             ShareStagingStore(
                 initialIntake = intake,
+                owner = CurrentCaptureOwner(::currentOwner),
+                queue = queue,
+                scheduler = scheduler,
+                clock = clock,
+                scope = scope,
+                submissionAccess = submissionAccess,
+                captureSource = CaptureSource.IosShareExtension,
+                captureCreatedAt = Instant.fromEpochMilliseconds(capturedAtEpochMilliseconds),
+                idempotencyKey = "ios-share-$handoffId",
+                onCommitted = {
+                    onCommitted()
+                    dismissShare()
+                },
+                onCancelled = {
+                    onCancelled()
+                    dismissShare()
+                },
+                onFailure = onFailure,
+            )
+    }
+
+    fun presentFileShare(
+        handoffId: String,
+        stagedFileId: String,
+        displayName: String,
+        mediaType: String,
+        byteSize: Long,
+        sha256Hex: String,
+        capturedAtEpochMilliseconds: Long,
+        onCommitted: () -> Unit,
+        onCancelled: () -> Unit,
+        onFailure: () -> Unit,
+    ) {
+        if (shareStore.value != null) return
+        shareStore.value =
+            ShareStagingStore(
+                initialIntake =
+                    ShareIntake.File(
+                        stagedFileId = stagedFileId,
+                        displayName = displayName,
+                        mediaType = mediaType,
+                        byteSize = byteSize,
+                        sha256Hex = sha256Hex,
+                    ),
                 owner = CurrentCaptureOwner(::currentOwner),
                 queue = queue,
                 scheduler = scheduler,
@@ -339,6 +432,12 @@ class IosApplicationController(
         scope.cancel()
         queue.close()
         client.close()
+    }
+
+    fun closeQueueForLocalErasure() {
+        dismissShare()
+        activeDetailStore?.setVisible(false)
+        queue.close()
     }
 
     private fun currentOwner(): CaptureOwner? =

@@ -1,0 +1,20 @@
+{
+  "producer_repository": "po4yka/ratatoskr-contracts",
+  "producer_revision": "ad5a9ba7cad05b0ce992e0d21a5c4e22e185f799",
+  "files": {
+    "fixtures/upload-chunk-receipt/chunk-receipt-replayed.json": "3550aa615e2775ee646b60e8e74229a7a4f81aa68ad18b8a9371e8204895db2e",
+    "fixtures/upload-completion-outcome/completion-outcome-digest-mismatch.json": "6d574b2d5dc68f635303d34bfc29238e50c6df5c0f849166429e16ab4e47fd0e",
+    "fixtures/upload-completion-outcome/completion-outcome-stored.json": "2a14e6a47f2d8cff3f1dbdeede0248105cf44cda44211692c2d61530efc4eca8",
+    "fixtures/upload-finalize-request/finalize-request.json": "f8a37d351e8cf5d5c4d7c65726b61c33616be5dde2e1feca6fdbbd1f0c26bb56",
+    "fixtures/upload-session-opened/session-opened.json": "f79f2b119acfcd007edecb62e056326a2d57defe75b4bf705d954fa83d9205d4",
+    "fixtures/upload-session-request/minimal-declaration.json": "8c5b18147eb4d54bc5499b7bc879e8ac0295ca2075f7baf154ce0a97ccd17250",
+    "fixtures/upload-session-request/multi-chunk-declaration.json": "62f415447a9c3df67b2851ef390bb0673f2ea4600b1c0aa49ae987a069b8ec9d",
+    "fixtures/upload-status-response/status-response-partial.json": "0147aca6126bc7e78ab8fbdc63b8c3c41cc643630a2c8e673997683259feab21",
+    "schemas/upload-chunk-receipt.v1.schema.json": "bcdd89c45151ff6b5cd2a3fb5565e61697b4bafd2ce21f226df5faa987571263",
+    "schemas/upload-completion-outcome.v1.schema.json": "d71c7fb5af1e391c025896fc79171f9650349d448e0df10857af7aa98b9bba0b",
+    "schemas/upload-finalize-request.v1.schema.json": "3b1e2e6d01dca8807d731d22a485fc8770ac400f95ae8604bfc9e1f8f0b9831b",
+    "schemas/upload-session-opened.v1.schema.json": "f1188980cf26978f347b6f46f97477fa9df7b4251ce2c182d94a92edb075a85f",
+    "schemas/upload-session-request.v1.schema.json": "09b31e2c4225b239a66aa540cfe229a9b98709a0a23b6ef23d94498d65659bac",
+    "schemas/upload-status-response.v1.schema.json": "e4b8f084a361330863f3b23537e57c250a344a3c256c1c1dc0c36a5018d785b1"
+  }
+}

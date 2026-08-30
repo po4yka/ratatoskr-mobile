@@ -53,6 +53,9 @@ fun ShareStagingSurface(
         when (state) {
             is ShareStagingState.Ready -> {
                 BasicText(state.originalText)
+                state.file?.let { file ->
+                    BasicText("${file.mediaType} · ${file.byteSize} bytes will be uploaded when integration is available.")
+                }
                 state.message?.let {
                     BasicText(it, style = TextStyle(color = Color(0xFF7A2500)))
                 }
@@ -133,4 +136,18 @@ private fun ShareIntakeRejection.safeMessage(): String =
             "Only http and https URLs can be captured."
         ShareIntakeRejection.MultipleUrls ->
             "This share contains more than one URL. Share one URL at a time."
+        ShareIntakeRejection.MissingFile ->
+            "The shared file is missing."
+        ShareIntakeRejection.MissingReadGrant ->
+            "Ratatoskr cannot read the shared file."
+        ShareIntakeRejection.AmbiguousShare ->
+            "Share either one file or one URL at a time."
+        ShareIntakeRejection.OversizedFile ->
+            "This file exceeds the 100 MiB staging limit."
+        ShareIntakeRejection.StorageCapacityExceeded ->
+            "Local staging is full. Open Local storage to clean up before sharing another file."
+        ShareIntakeRejection.UnsafeFile ->
+            "The shared file type does not match its content."
+        ShareIntakeRejection.UnreadableFile ->
+            "The shared file could not be copied safely."
     }

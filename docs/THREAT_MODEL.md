@@ -1,5 +1,14 @@
 # Mobile threat model
 
+Shared files are hostile. Ratatoskr accepts reviewed types/sizes, validates content evidence,
+sanitizes display names, uses opaque app-owned paths, refuses symlink traversal, and ends external
+authority after atomic staging. Paths, content, tokens, and filenames do not enter scheduler data.
+A proven revoke or confirmed clear-data writes an erase generation before cancellation, deletes
+only registered roots, inventories residue, and removes its marker last. An interrupted wipe resumes
+before Room, secure credentials, App Group inbox, or session restoration. Local clear never implies
+server archive deletion. After a completed wipe the current process remains fail-closed and asks
+the user to restart before re-pairing, so no closed or partly erased store can be reused.
+
 ## Assets
 
 Private shared URLs/text/files, staged copies, device credentials, local notes/cache, operation results, deep links, notifications, and release integrity.

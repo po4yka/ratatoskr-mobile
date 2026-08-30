@@ -3,6 +3,45 @@ import Foundation
 struct ClaimedShareEnvelope: Equatable, Sendable {
   let envelope: ShareEnvelope
   let fileURL: URL
+  let artifactURL: URL?
+
+  init(envelope: ShareEnvelope, fileURL: URL, artifactURL: URL? = nil) {
+    self.envelope = envelope
+    self.fileURL = fileURL
+    self.artifactURL = artifactURL
+  }
+}
+
+struct ImportedPrivateArtifact: Equatable, Sendable {
+  let descriptor: ShareFileDescriptor
+  let privateURL: URL
+}
+
+struct AppGroupPrivateArtifactImporter: Sendable {
+  let privateRootURL: URL
+
+  func `import`(_ claim: ClaimedShareEnvelope) throws -> ImportedPrivateArtifact {
+    guard let expected = claim.envelope.file, let sourceURL = claim.artifactURL else {
+      throw ShareEnvelopeError.invalid
+    }
+    let store = AppGroupArtifactStore(rootURL: privateRootURL)
+    if store.verifyPublished(expected) {
+      return ImportedPrivateArtifact(
+        descriptor: expected,
+        privateURL: store.publishedArtifactURL(id: expected.artifactID))
+    }
+    let staged = try store.stage(
+      ShareFileCandidate(
+        sourceURL: sourceURL,
+        mediaType: expected.mediaType,
+        displayName: expected.displayName,
+        sizeBytes: expected.sizeBytes),
+      artifactID: expected.artifactID)
+    guard staged == expected else { throw ShareEnvelopeError.invalid }
+    return ImportedPrivateArtifact(
+      descriptor: staged,
+      privateURL: store.publishedArtifactURL(id: staged.artifactID))
+  }
 }
 
 actor AppGroupInbox {
@@ -33,7 +72,7 @@ actor AppGroupInbox {
       do {
         let envelope = try AppGroupEnvelopeStore(rootURL: processingURL).loadPublished(
           at: destination)
-        let claim = ClaimedShareEnvelope(envelope: envelope, fileURL: destination)
+        let claim = try claim(envelope: envelope, fileURL: destination)
         activeID = envelope.id
         return claim
       } catch {
@@ -69,9 +108,17 @@ actor AppGroupInbox {
     containerURL.appendingPathComponent("ShareRejected", isDirectory: true)
   }
 
+  private var artifactsURL: URL {
+    containerURL.appendingPathComponent("ShareArtifacts", isDirectory: true)
+  }
+
+  private var processingArtifactsURL: URL {
+    containerURL.appendingPathComponent("ShareProcessingArtifacts", isDirectory: true)
+  }
+
   private func createDirectories() throws {
     do {
-      for url in [inboxURL, processingURL, rejectedURL] {
+      for url in [inboxURL, processingURL, rejectedURL, artifactsURL, processingArtifactsURL] {
         try FileManager.default.createDirectory(
           at: url,
           withIntermediateDirectories: true,
@@ -87,7 +134,7 @@ actor AppGroupInbox {
     let store = AppGroupEnvelopeStore(rootURL: processingURL)
     for url in store.publishedURLs() {
       do {
-        return ClaimedShareEnvelope(envelope: try store.loadPublished(at: url), fileURL: url)
+        return try claim(envelope: store.loadPublished(at: url), fileURL: url)
       } catch {
         try reject(url)
       }
@@ -104,10 +151,38 @@ actor AppGroupInbox {
     else { throw ShareEnvelopeError.invalid }
     do {
       try FileManager.default.removeItem(at: claim.fileURL)
+      if let artifactURL = claim.artifactURL,
+        FileManager.default.fileExists(atPath: artifactURL.path)
+      {
+        try FileManager.default.removeItem(at: artifactURL)
+      }
       activeID = nil
     } catch {
       throw ShareEnvelopeError.unavailable
     }
+  }
+
+  private func claim(envelope: ShareEnvelope, fileURL: URL) throws -> ClaimedShareEnvelope {
+    guard let descriptor = envelope.file else {
+      return ClaimedShareEnvelope(envelope: envelope, fileURL: fileURL)
+    }
+    let destination = processingArtifactsURL.appendingPathComponent(
+      descriptor.artifactID.uuidString.lowercased(), isDirectory: false)
+    if !FileManager.default.fileExists(atPath: destination.path) {
+      let source = artifactsURL.appendingPathComponent(
+        descriptor.artifactID.uuidString.lowercased(), isDirectory: false)
+      guard FileManager.default.fileExists(atPath: source.path) else {
+        throw ShareEnvelopeError.invalid
+      }
+      try FileManager.default.moveItem(at: source, to: destination)
+    }
+    let values = try destination.resourceValues(
+      forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
+    guard
+      values.isRegularFile == true, values.isSymbolicLink != true,
+      Int64(values.fileSize ?? -1) == descriptor.sizeBytes
+    else { throw ShareEnvelopeError.invalid }
+    return ClaimedShareEnvelope(envelope: envelope, fileURL: fileURL, artifactURL: destination)
   }
 
   private func reject(_ url: URL) throws {
@@ -150,4 +225,134 @@ actor AppGroupInbox {
   }
 
   private static let maximumRejectedFiles = 32
+}
+
+protocol IosEraseBoundary: AnyObject {
+  func cancelBackgroundAndNotifications()
+  func residueCount() -> Int
+}
+
+struct IosEraseInventory: Equatable {
+  let credentials: Bool
+  let databaseFiles: Int
+  let ownedFiles: Int
+  let preferenceEntries: Int
+  let scheduledOrNotified: Int
+
+  var isEmpty: Bool {
+    !credentials && databaseFiles + ownedFiles + preferenceEntries + scheduledOrNotified == 0
+  }
+}
+
+final class IosLocalDataEraser {
+  private let markerURL: URL
+  private let queuePath: String
+  private let ownedRoots: [URL]
+  private let userDefaultsSuites: [String]
+  private let boundary: IosEraseBoundary
+  private let clearCredentials: () throws -> Void
+  private let credentialsPresent: () throws -> Bool
+  private let closeQueue: () -> Void
+
+  init(
+    markerURL: URL,
+    queuePath: String,
+    ownedRoots: [URL],
+    userDefaultsSuites: [String],
+    boundary: IosEraseBoundary,
+    clearCredentials: @escaping () throws -> Void,
+    credentialsPresent: @escaping () throws -> Bool,
+    closeQueue: @escaping () -> Void
+  ) {
+    self.markerURL = markerURL
+    self.queuePath = queuePath
+    self.ownedRoots = ownedRoots
+    self.userDefaultsSuites = userDefaultsSuites
+    self.boundary = boundary
+    self.clearCredentials = clearCredentials
+    self.credentialsPresent = credentialsPresent
+    self.closeQueue = closeQueue
+  }
+
+  func begin(reason: String) -> Bool {
+    guard reason.range(of: "^[a-z_]{1,64}$", options: .regularExpression) != nil else {
+      return false
+    }
+    do {
+      let value = "\(UUID().uuidString.lowercased()):\(reason)"
+      try Data(value.utf8).write(to: markerURL, options: .atomic)
+      return eraseMarkedData()
+    } catch {
+      return false
+    }
+  }
+
+  func resumeIfNeeded() -> Bool {
+    !markerExists() || eraseMarkedData()
+  }
+
+  func markerExists() -> Bool {
+    FileManager.default.fileExists(atPath: markerURL.path)
+  }
+
+  func inventory() -> IosEraseInventory {
+    let databaseFiles = [queuePath, queuePath + "-wal", queuePath + "-shm"]
+      .filter { FileManager.default.fileExists(atPath: $0) }.count
+    let preferenceEntries = userDefaultsSuites.reduce(into: 0) { count, suite in
+      count += UserDefaults.standard.persistentDomain(forName: suite)?.count ?? 0
+    }
+    return IosEraseInventory(
+      credentials: (try? credentialsPresent()) ?? true,
+      databaseFiles: databaseFiles,
+      ownedFiles: ownedRoots.reduce(0) { $0 + ownedFileCount($1) },
+      preferenceEntries: preferenceEntries,
+      scheduledOrNotified: boundary.residueCount())
+  }
+
+  private func eraseMarkedData() -> Bool {
+    guard markerExists() else { return true }
+    guard markerIsValid() else { return false }
+    boundary.cancelBackgroundAndNotifications()
+    try? clearCredentials()
+    closeQueue()
+    for path in [queuePath, queuePath + "-wal", queuePath + "-shm"] {
+      try? FileManager.default.removeItem(atPath: path)
+    }
+    for root in ownedRoots {
+      try? FileManager.default.removeItem(at: root)
+    }
+    for suite in userDefaultsSuites {
+      UserDefaults.standard.removePersistentDomain(forName: suite)
+    }
+    guard inventory().isEmpty else { return false }
+    do {
+      try FileManager.default.removeItem(at: markerURL)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  private func markerIsValid() -> Bool {
+    guard
+      let data = try? Data(contentsOf: markerURL), data.count <= 128,
+      let value = String(data: data, encoding: .utf8)
+    else { return false }
+    return value.range(
+      of:
+        "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[a-z_]{1,64}$",
+      options: .regularExpression) != nil
+  }
+
+  private func ownedFileCount(_ root: URL) -> Int {
+    guard FileManager.default.fileExists(atPath: root.path) else { return 0 }
+    let values = try? root.resourceValues(forKeys: [.isSymbolicLinkKey, .isDirectoryKey])
+    if values?.isSymbolicLink == true || values?.isDirectory != true { return 1 }
+    let keys: [URLResourceKey] = [.isSymbolicLinkKey]
+    return FileManager.default.enumerator(
+      at: root,
+      includingPropertiesForKeys: keys,
+      options: [],
+      errorHandler: { _, _ in false })?.allObjects.count ?? 0
+  }
 }

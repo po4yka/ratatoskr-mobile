@@ -11,6 +11,16 @@ sealed interface ShareIntake {
     data class UnsupportedText(
         override val originalText: String,
     ) : ShareIntake
+
+    data class File(
+        val stagedFileId: String,
+        val displayName: String,
+        val mediaType: String,
+        val byteSize: Long,
+        val sha256Hex: String,
+    ) : ShareIntake {
+        override val originalText: String = displayName
+    }
 }
 
 enum class ShareIntakeRejection {
@@ -20,6 +30,13 @@ enum class ShareIntakeRejection {
     OversizedText,
     UnsupportedScheme,
     MultipleUrls,
+    MissingFile,
+    MissingReadGrant,
+    AmbiguousShare,
+    OversizedFile,
+    StorageCapacityExceeded,
+    UnsafeFile,
+    UnreadableFile,
 }
 
 sealed interface ShareIntakeResult {

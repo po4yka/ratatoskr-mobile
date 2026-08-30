@@ -1,7 +1,7 @@
 # Developing Ratatoskr Mobile
 
-> Status: Android/iOS URL Share and shared library preview surfaces implemented
-> Last reviewed: 2026-08-29
+> Status: Android/iOS explicit URL/text/file staging and shared library preview surfaces implemented
+> Last reviewed: 2026-08-30
 
 The repository contains buildable Android and iOS application shells around one shared Compose
 Multiplatform root. Device pairing, rotating device sessions, native secure credential storage,
@@ -11,7 +11,10 @@ staged-file-reference models plus the durable Room capture queue are implemented
 generic notifications, and validated operation-detail routing are implemented. The iOS Share
 Extension performs bounded native parsing and atomic App Group staging; the main app confirms
 through shared Compose, submits from the Room queue, and exposes shared operation status. File
-uploads are not implemented.
+transfer protocol, protected file staging, resumable checkpoints, retention, constrained native
+schedulers, complete local erasure, and shared storage UI are implemented. Production file delivery
+is explicitly `IntegrationPending`: the pinned Platform OpenAPI has no public receipt binding, so
+shipping code sends no file bytes.
 The shared library now consumes Platform `library.search` and `library.read_state`; full reader,
 favorite, note, collection, tag, social, and AI-archive data remains an explicitly unsynchronized
 contract-fixture preview until public Platform contracts exist.
@@ -42,6 +45,7 @@ underlying commands directly.
 ./tooling/tests/ios_share_entitlements_test.sh
 ./tooling/tests/platform_library_contract_test.sh
 ./tooling/tests/github_contract_fixture_test.sh
+./tooling/tests/blob_transfer_contract_drift_test.sh
 
 build-gate -- ./gradlew --no-daemon ktlintCheck
 build-gate -- ./tooling/contracts/check.sh
@@ -132,6 +136,19 @@ close/reopen preservation of payload, source sequence, local ID, and idempotency
 also proves the native protection seam is invoked. iOS Simulator does not report
 `NSFileProtectionKey` after a successful attribute write, so physical-device attribute inspection
 is a release-check gap rather than claimed simulator evidence.
+
+## File transfer, retention, scheduling, and erasure gate
+
+`BlobTransferContractTest`, `ResumableUploadCoordinatorTest`, `ArtifactRetentionPolicyTest`,
+`TransferSchedulingPolicyTest`, and `LocalDataErasureCoordinatorTest` cover generated semantics,
+resume reconciliation, bounds, durable leases, and marker-last erasure.
+`blob_transfer_contract_drift_test.sh` mutates a pinned schema and generated Kotlin output.
+
+Android instrumentation runs `AndroidStagedArtifactStoreTest`, `FileUploadWorkerTest`,
+`AndroidLocalDataErasureInstrumentedTest`, and `LocalStorageUiTest`. Hosted iOS XCTest runs
+`IosFileUploadSchedulerTests`, `IosLocalDataErasureTests`, `IosLocalStorageSurfaceSmokeTests`, and the synthetic file case in
+`IosShareSmokeTests`. This is emulator/simulator evidence, not live receipt, guaranteed background,
+physical-device protection/battery, release-signing, or store proof.
 
 ## Generated Platform contracts
 

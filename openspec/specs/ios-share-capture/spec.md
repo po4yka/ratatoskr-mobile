@@ -8,7 +8,13 @@ Allow an explicit iOS URL or text share to survive Share Extension termination, 
 
 ### Requirement: Share Extension accepts one bounded explicit URL or text item
 
-The iOS Share Extension SHALL accept only an explicit share containing one semantic public HTTP(S) URL or one bounded plain-text value, SHALL preserve the original loaded value separately from any detected URL, and SHALL reject missing, oversized, unsupported, unreadable, or ambiguous input without silently dropping part of the share. It SHALL NOT inspect the clipboard, provider accounts, unrelated attachments, or passive application state.
+The iOS Share Extension SHALL accept only an explicit share containing one semantic public HTTP(S)
+URL, one bounded plain-text value, or one supported PDF/JPEG/PNG file no larger than 100 MiB. It
+SHALL preserve original loaded values separately from detected URLs, SHALL stream-copy a file into
+the protected App Group staging root while item-provider/security-scoped access is valid, and SHALL
+reject missing, oversized, unsupported, unreadable, mismatched, or ambiguous input without silently
+dropping part of the share. It SHALL NOT inspect clipboard, provider accounts, unrelated attachments,
+or passive application state.
 
 #### Scenario: Public URL representation is accepted
 - **WHEN** one item provider supplies one absolute HTTP(S) public URL within the documented bounds
@@ -22,61 +28,87 @@ The iOS Share Extension SHALL accept only an explicit share containing one seman
 - **WHEN** one bounded plain-text representation contains no absolute URL
 - **THEN** the extension stages it as preview-only text and does not claim that Platform can submit it
 
+#### Scenario: Supported file representation is copied
+- **WHEN** one item provider supplies a readable bounded PDF, JPEG, or PNG representation
+- **THEN** the extension atomically publishes one protected opaque App Group artifact and envelope, releases scoped access, and records only sanitized display metadata plus size, type, and digest
+
 #### Scenario: Ambiguous or hostile input is refused
-- **WHEN** providers yield multiple distinct URLs, multiple text items, a non-HTTP(S) scheme, an oversized value, an unsupported representation, or a load failure
-- **THEN** the extension presents one safe failure, stages no partial capture, and completes or cancels its request accurately
+- **WHEN** providers yield multiple semantic items, URL/file combinations, a non-HTTP(S) scheme, oversized or unsupported content, mismatched file evidence, traversal metadata, or a load/copy failure
+- **THEN** the extension presents one safe failure, publishes no partial capture, releases scoped access, and completes or cancels its request accurately
 
 ### Requirement: App Group handoff is atomic, bounded, and restartable
 
-The extension SHALL write each accepted intake as one bounded, schema-validated envelope in the configured App Group container using an opaque stable handoff identifier and an atomic publish boundary. The main app SHALL ignore incomplete temporary files, SHALL atomically claim a published envelope before presenting it, and SHALL retain or recover claimed data until the user cancels it or a matching durable queue record is confirmed.
+The extension SHALL write each accepted intake as one bounded schema-validated envelope plus, for a
+file, one opaque protected artifact in the configured App Group container using one stable handoff
+identifier and atomic publish boundary. The main app SHALL ignore incomplete temporary files,
+atomically claim both envelope and referenced artifact before presenting them, validate every path
+inside reviewed roots, and retain or recover claimed data until cancellation or a matching durable
+queue record is confirmed.
 
 #### Scenario: Extension terminates after publishing
-- **WHEN** the extension atomically publishes a valid envelope and exits before the main app runs
-- **THEN** a later main-app launch imports the same handoff identifier, original content, detected URL, and capture time exactly once
+- **WHEN** the extension atomically publishes a valid URL/text envelope or file envelope/artifact and exits before the main app runs
+- **THEN** a later main-app launch imports the same handoff identifier, payload metadata, protected file bytes when present, and capture time exactly once
 
 #### Scenario: Write is interrupted before publish
-- **WHEN** extension execution ends while only a temporary or incomplete envelope exists
-- **THEN** the main app imports no capture from that file and does not delete any unrelated App Group data
+- **WHEN** extension execution ends while only a temporary envelope or file copy exists
+- **THEN** the main app imports no capture from it and cleanup later treats only that app-owned temporary material as an orphan
 
 #### Scenario: Main app dies while committing the queue record
-- **WHEN** the app is interrupted after enqueue may have succeeded but before the claimed envelope is removed
-- **THEN** restart reuses the envelope's stable identifier and capture time so confirmation converges on the same queue record and idempotency key
+- **WHEN** the app is interrupted after enqueue may have succeeded but before the claimed envelope/artifact is reconciled
+- **THEN** restart reuses the handoff identifier and capture time so confirmation converges on the same queue record, idempotency key, and staged artifact
 
 #### Scenario: Envelope is malformed or exceeds its bound
-- **WHEN** the App Group inbox contains a malformed, path-invalid, unknown-kind, unsupported-schema, or oversized envelope
-- **THEN** the importer refuses it without reading outside the app-owned inbox, exposes a safe local error, and leaves valid envelopes importable
+- **WHEN** the App Group inbox contains a malformed, path-invalid, unknown-kind, unsupported-schema, oversized, digest-mismatched, or missing-artifact envelope
+- **THEN** the importer refuses it without reading outside app-owned roots, exposes a safe local error, and leaves unrelated valid envelopes importable
 
 ### Requirement: Main-app confirmation owns durable submission
 
-The extension SHALL perform no capture network request and SHALL NOT open the shared queue database. The main app SHALL present imported input through the shared staging surface, SHALL create no queue record before explicit confirmation, and SHALL durably enqueue supported URLs with iOS Share Extension provenance before requesting native background submission. Text-only input SHALL remain visible but non-submittable until the public Platform contract supports it.
+The extension SHALL perform no network request and SHALL NOT open the shared queue database. The
+main app SHALL present imported input through shared staging, create no queue record before explicit
+confirmation, and durably enqueue supported URLs or protected files with iOS Share Extension
+provenance before requesting native background work. Text-only input SHALL remain visible but
+non-submittable until the public Platform contract supports it. Cancellation SHALL remove only the
+unreferenced claimed envelope/artifact.
 
 #### Scenario: Confirmed URL enters the durable queue
 - **WHEN** a paired user confirms an imported URL while the device is online or offline
 - **THEN** one iOS Share Extension queue record with the handoff-derived idempotency key is committed before scheduling and the surface reports durable queued state
 
+#### Scenario: Confirmed file enters the durable queue
+- **WHEN** a paired user confirms one valid imported protected file
+- **THEN** one staged-file queue record retains the handoff-derived identity and artifact digest before constrained transfer scheduling is requested
+
 #### Scenario: User cancels imported input
 - **WHEN** the user cancels a staged handoff before confirmation
-- **THEN** no queue or Platform capture is created and only that app-owned handoff is removed
+- **THEN** no queue or Platform capture is created and only that app-owned handoff and unreferenced file are removed
 
 #### Scenario: Queue commit fails
-- **WHEN** local capacity, validation, protection, or database failure prevents durable enqueue
+- **WHEN** local capacity, validation, protection, digest, or database failure prevents durable enqueue
 - **THEN** no submission is scheduled, the handoff remains recoverable, and the user sees a safe retryable or permanent local error
 
 ### Requirement: iOS scheduling remains a wake-up mechanism
 
-After a main-app queue commit, Ratatoskr SHALL submit and refresh work through the existing owner-scoped queue and device-session contracts during bounded foreground reconciliation or a reviewed iOS background task. Scheduler cancellation, expiration, duplication, or process death SHALL NOT replace the queue's persisted eligibility, lease, idempotency, operation binding, ordering, or retry truth.
+After a main-app queue commit, Ratatoskr SHALL submit, upload, and refresh through the existing
+owner-scoped queue/device-session contracts during bounded foreground reconciliation or reviewed iOS
+background execution. Background file work SHALL require network connectivity, SHALL defer in Low
+Power Mode, and SHALL require external power above 32 MiB. Cancellation, expiration, duplication,
+revocation, or process death SHALL NOT replace durable queue/upload identity or ordering.
 
 #### Scenario: Offline capture is submitted later
-- **WHEN** a confirmed URL is queued without connectivity and a later foreground or background opportunity occurs at or after its persisted eligibility time
-- **THEN** the main app reuses the stored request and idempotency key and records Platform acceptance or a classified queue failure
+- **WHEN** a confirmed URL or file is queued without connectivity and a later foreground or background opportunity occurs at or after persisted eligibility
+- **THEN** the main app reuses stored capture/transfer identity and records Platform/receiver acceptance or a classified durable failure
 
 #### Scenario: Background execution expires
-- **WHEN** iOS expires submission work while a queue claim is active
-- **THEN** execution stops promptly and a later invocation can recover the same record after its persisted lease without minting a replacement capture
+- **WHEN** iOS expires submission work while a queue or transfer lease is active
+- **THEN** execution stops promptly and a later invocation reconciles and resumes the same record after its persisted lease without minting replacement identity
+
+#### Scenario: Battery policy defers file work
+- **WHEN** iOS is in Low Power Mode or an eligible file above 32 MiB lacks external power
+- **THEN** background transfer remains durably pending without incrementing attempts or changing the receipt declaration
 
 #### Scenario: Device session is revoked
 - **WHEN** submission or operation refresh proves that the paired device is revoked
-- **THEN** credentials and capabilities are cleared, pending records move to re-pairing truth, and native scheduling does not enter an authorization retry storm
+- **THEN** iOS cancels background work and notifications, wipes Keychain plus app/App Group local stores and files, and exposes an unpaired empty state without an authorization retry storm
 
 ### Requirement: iOS app exposes shared operation status behavior
 

@@ -7,6 +7,8 @@ Required suites:
 - iOS Share Extension item-provider/file/App Group handoff, extension timeout/memory, app launch, background URLSession, Keychain, universal links.
 - Hostile/oversized/unsupported files, low disk, hash mismatch, duplicate shares, offline/auth revoke/server retry/partial results.
 - Staged-file retention/cleanup and no-content logs/notifications.
+- Resumable receiver reconciliation, exact chunk bounds, receipt-versus-acceptance, retention
+  admission, native scheduler constraints, and marker-last complete erasure.
 - Accessibility: screen readers, Dynamic Type/font scaling, contrast, focus, localization layout.
 - Generated API/capability compatibility and workspace mobile -> Platform -> domain flow.
 

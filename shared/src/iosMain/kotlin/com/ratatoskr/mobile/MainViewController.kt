@@ -20,5 +20,6 @@ fun MainViewController(controller: IosApplicationController): UIViewController =
             library = controller.library,
             github = controller.github,
             initialContentRoute = libraryRoute,
+            localStorageStore = controller.localStorageStore,
         )
     }

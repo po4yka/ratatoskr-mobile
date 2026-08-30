@@ -1,6 +1,9 @@
 package com.ratatoskr.mobile
 
 import android.app.Application
+import android.app.NotificationManager
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.ratatoskr.mobile.api.generated.model.OperationStatus
 import com.ratatoskr.mobile.capture.CaptureOwner
 import com.ratatoskr.mobile.github.AuthorizedGithubRepository
@@ -31,10 +34,20 @@ import com.ratatoskr.mobile.queue.QueueClock
 import com.ratatoskr.mobile.queue.QueueJitter
 import com.ratatoskr.mobile.queue.QueueKeyGenerator
 import com.ratatoskr.mobile.queue.createAndroidQueuePersistence
+import com.ratatoskr.mobile.share.AndroidStagedArtifactStore
+import com.ratatoskr.mobile.share.ContentResolverAndroidContentSource
 import com.ratatoskr.mobile.share.CurrentCaptureOwner
 import com.ratatoskr.mobile.share.ShareIntake
 import com.ratatoskr.mobile.share.ShareStagingStore
 import com.ratatoskr.mobile.share.ShareSubmissionAccess
+import com.ratatoskr.mobile.storage.AndroidArtifactLedger
+import com.ratatoskr.mobile.storage.AndroidEraseBoundary
+import com.ratatoskr.mobile.storage.AndroidEraseGenerationStore
+import com.ratatoskr.mobile.storage.AndroidLocalDataErasure
+import com.ratatoskr.mobile.storage.ArtifactCleanupCoordinator
+import com.ratatoskr.mobile.storage.ArtifactRetentionPolicy
+import com.ratatoskr.mobile.storage.ClearDataResult
+import com.ratatoskr.mobile.storage.LocalStorageStore
 import com.ratatoskr.mobile.submission.CaptureSubmissionCoordinator
 import com.ratatoskr.mobile.submission.DeviceAuthorizedRequestExecutor
 import com.ratatoskr.mobile.submission.KtorPlatformCaptureApi
@@ -43,6 +56,9 @@ import com.ratatoskr.mobile.submission.QueueDrainer
 import com.ratatoskr.mobile.submission.QueueDrainerProvider
 import com.ratatoskr.mobile.submission.SubmissionDrainResult
 import com.ratatoskr.mobile.submission.WorkManagerSubmissionScheduler
+import com.ratatoskr.mobile.transfer.FileUploadDrainOutcome
+import com.ratatoskr.mobile.transfer.FileUploadDrainerProvider
+import com.ratatoskr.mobile.transfer.FileUploadWorkScheduler
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.CoroutineScope
@@ -55,6 +71,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.minutes
@@ -62,17 +79,40 @@ import kotlin.time.Instant
 
 class RatatoskrApplication :
     Application(),
-    QueueDrainerProvider {
+    QueueDrainerProvider,
+    FileUploadDrainerProvider {
     lateinit var container: AndroidApplicationContainer
         private set
 
     override val queueDrainer: QueueDrainer
         get() = container.queueDrainer
 
+    override fun currentEraseGeneration(): String = container.eraseGeneration.current()
+
+    override suspend fun drainFileUpload(opaqueOwnerWorkKey: String): FileUploadDrainOutcome = container.drainFileUpload(opaqueOwnerWorkKey)
+
     override fun onCreate() {
         super.onCreate()
+        val startupCredentials = AndroidKeystoreCredentialStorage(this)
+        check(
+            AndroidLocalDataErasure(
+                context = this,
+                credentials = startupCredentials,
+                closeQueue = {},
+                databaseNames = listOf(QUEUE_DATABASE),
+                stagedRoots = listOf(java.io.File(noBackupFilesDir, STAGING_DIRECTORY)),
+                preferenceNames = emptyList(),
+                cacheRoots = listOf(cacheDir),
+                boundary = LiveAndroidEraseBoundary(this),
+            ).resumeIfNeeded(),
+        ) { "Local data erasure must complete before application stores open" }
         container = AndroidApplicationContainer(this)
         container.start()
+    }
+
+    private companion object {
+        const val QUEUE_DATABASE = "ratatoskr-capture-queue.db"
+        const val STAGING_DIRECTORY = "ratatoskr-staging"
     }
 }
 
@@ -85,10 +125,32 @@ class AndroidApplicationContainer(
         HttpClient(OkHttp) {
             followRedirects = false
         }
+    private val credentials = AndroidKeystoreCredentialStorage(application)
+    val queue =
+        CaptureQueue(
+            persistence = createAndroidQueuePersistence(application),
+            clock = clock,
+            keyGenerator = QueueKeyGenerator { UUID.randomUUID().toString() },
+            jitter = QueueJitter { Random.nextDouble() },
+        )
+    val eraseGeneration = AndroidEraseGenerationStore(application)
+    private val eraser =
+        AndroidLocalDataErasure(
+            context = application,
+            credentials = credentials,
+            closeQueue = queue::close,
+            databaseNames = listOf("ratatoskr-capture-queue.db"),
+            stagedRoots = listOf(java.io.File(application.noBackupFilesDir, "ratatoskr-staging")),
+            preferenceNames = emptyList(),
+            cacheRoots = listOf(application.cacheDir),
+            boundary = LiveAndroidEraseBoundary(application),
+            generationStore = eraseGeneration,
+        )
     val sessions =
         DeviceSessionManager(
             KtorPlatformIdentityApi(client),
-            AndroidKeystoreCredentialStorage(application),
+            credentials,
+            onProvenRevocation = { eraser.begin("proven_remote_revocation") },
         )
     private val authorizedRequests = DeviceAuthorizedRequestExecutor(sessions)
     private val productionShareSubmissionAccess =
@@ -107,14 +169,42 @@ class AndroidApplicationContainer(
         )
     internal var shareSubmissionAccess: StateFlow<ShareSubmissionAccess> =
         productionShareSubmissionAccess
-    val queue =
-        CaptureQueue(
-            persistence = createAndroidQueuePersistence(application),
-            clock = clock,
-            keyGenerator = QueueKeyGenerator { UUID.randomUUID().toString() },
-            jitter = QueueJitter { Random.nextDouble() },
-        )
     val scheduler = WorkManagerSubmissionScheduler(application)
+    val artifactStore =
+        AndroidStagedArtifactStore(
+            root = java.io.File(application.noBackupFilesDir, "ratatoskr-staging"),
+            source = ContentResolverAndroidContentSource(application.contentResolver),
+            idFactory = { UUID.randomUUID().toString() },
+        )
+    private val artifactLedger = AndroidArtifactLedger(queue, artifactStore)
+    private val cleanup = ArtifactCleanupCoordinator(artifactLedger)
+    val localStorageStore =
+        LocalStorageStore(
+            initialUsage = ArtifactRetentionPolicy().usage(runBlocking { artifactLedger.inventory() }),
+            availability = com.ratatoskr.mobile.transfer.FileTransferAvailability.IntegrationPending,
+            cleanup = { cleanup.cleanup(clock.now()).usage },
+            erasure = { confirmed ->
+                if (!confirmed) {
+                    ClearDataResult.Cancelled
+                } else if (eraser.begin("confirmed_clear_data")) {
+                    sessions.signOut()
+                    ClearDataResult.Completed(eraseGeneration.current())
+                } else {
+                    ClearDataResult.Failed(eraseGeneration.current())
+                }
+            },
+            scope = appScope,
+        )
+
+    suspend fun drainFileUpload(opaqueOwnerWorkKey: String): FileUploadDrainOutcome {
+        val record = queue.inspect(opaqueOwnerWorkKey) ?: return FileUploadDrainOutcome.Complete
+        return if (record.uploadReceipt != null) {
+            FileUploadDrainOutcome.Complete
+        } else {
+            FileUploadDrainOutcome.IntegrationPending
+        }
+    }
+
     private val notifier = createAndroidCaptureStatusNotifier(application)
     private val submission =
         CaptureSubmissionCoordinator(
@@ -241,6 +331,9 @@ class AndroidApplicationContainer(
         clock = clock,
         scope = scope,
         submissionAccess = shareSubmissionAccess,
+        onCancelled = {
+            (intake as? ShareIntake.File)?.let { artifactStore.deleteUnreferenced(it.stagedFileId) }
+        },
     )
 
     fun createOperationListStore(scope: CoroutineScope) = OperationListStore(operationRepository, scope)
@@ -259,6 +352,30 @@ class AndroidApplicationContainer(
         const val MAX_SUBMISSIONS_PER_RUN = 8
         const val MAX_OPERATION_REFRESHES_PER_RUN = 8
         val OPERATION_REFRESH_INTERVAL = 15.minutes
+    }
+}
+
+private class LiveAndroidEraseBoundary(
+    context: Application,
+) : AndroidEraseBoundary {
+    private val workManager = WorkManager.getInstance(context)
+    private val notifications = context.getSystemService(NotificationManager::class.java)
+
+    override fun cancelWorkAndNotifications() {
+        workManager.cancelAllWorkByTag(WorkManagerSubmissionScheduler.UNIQUE_WORK_NAME).result.get()
+        workManager.cancelAllWorkByTag(FileUploadWorkScheduler.FILE_UPLOAD_TAG).result.get()
+        notifications.cancelAll()
+    }
+
+    override fun residueCount(): Int {
+        val work =
+            listOf(
+                WorkManagerSubmissionScheduler.UNIQUE_WORK_NAME,
+                FileUploadWorkScheduler.FILE_UPLOAD_TAG,
+            ).sumOf { tag ->
+                workManager.getWorkInfosByTag(tag).get().count { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }
+            }
+        return work + notifications.activeNotifications.size
     }
 }
 

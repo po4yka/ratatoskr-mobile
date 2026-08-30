@@ -86,6 +86,7 @@ enum class MobileCapability(
 class DeviceSessionManager(
     private val api: PlatformIdentityApi,
     private val storage: SecureCredentialStorage,
+    private val onProvenRevocation: suspend () -> Unit = {},
 ) {
     private val mutationMutex = Mutex()
     private var currentCredentials: DeviceCredentials? = null
@@ -255,6 +256,7 @@ class DeviceSessionManager(
             }
             is IdentityResult.Failure -> {
                 if (recovery.error == IdentityFailure.Unauthorized) {
+                    onProvenRevocation()
                     clearAuthorization(DeviceIdentityState.RePairingRequired)
                 } else {
                     mutableState.value = DeviceIdentityState.Failed(recovery.error)

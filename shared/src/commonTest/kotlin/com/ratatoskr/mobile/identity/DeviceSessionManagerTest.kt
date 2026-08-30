@@ -191,13 +191,19 @@ class DeviceSessionManagerTest {
     @Test
     fun paired_elsewhere_revocation_clears_session_gracefully() =
         runTest {
+            var erasureCompleted = false
             val storage = MemoryCredentialStorage(deviceCredentials())
             val api =
                 FakePlatformIdentityApi().apply {
                     refreshResults += IdentityResult.Failure(IdentityFailure.Unauthorized)
                     recoveryResults += IdentityResult.Failure(IdentityFailure.Unauthorized)
                 }
-            val manager = DeviceSessionManager(api, storage)
+            lateinit var manager: DeviceSessionManager
+            manager =
+                DeviceSessionManager(api, storage) {
+                    assertFalse(manager.state.value is DeviceIdentityState.RePairingRequired)
+                    erasureCompleted = true
+                }
             manager.restore()
 
             val result = manager.refreshSession()
@@ -207,14 +213,16 @@ class DeviceSessionManagerTest {
             assertEquals(1, storage.clearCount)
             assertEquals(DeviceIdentityState.RePairingRequired, manager.state.value)
             assertEquals(CapabilityState.Empty, manager.capabilities.value)
+            assertTrue(erasureCompleted)
         }
 
     @Test
     fun local_sign_out_clears_only_local_authorization() =
         runTest {
+            var erasureCalls = 0
             val storage = MemoryCredentialStorage(deviceCredentials())
             val api = FakePlatformIdentityApi()
-            val manager = DeviceSessionManager(api, storage)
+            val manager = DeviceSessionManager(api, storage) { erasureCalls += 1 }
             manager.restore()
 
             manager.signOut()
@@ -225,6 +233,7 @@ class DeviceSessionManagerTest {
             assertEquals(CapabilityState.Empty, manager.capabilities.value)
             assertEquals(0, api.refreshCount)
             assertEquals(0, api.recoveryCount)
+            assertEquals(0, erasureCalls)
         }
 
     @Test

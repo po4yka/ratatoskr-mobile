@@ -1,5 +1,10 @@
 # Mobile local data model
 
+The current Room schema binds one staged artifact and one upload transfer journal to the original
+capture local ID/idempotency key. Checkpoints retain declaration/session/status facts; a verified
+blob receipt remains distinct from Platform operation acceptance. During development schema version
+1 is edited in place and tests create it from empty storage; no migration or parallel version exists.
+
 ## Shared durable state
 
 - capture queue aggregate: stable local ID/idempotency key, exact URL/text-note/opaque staged-file

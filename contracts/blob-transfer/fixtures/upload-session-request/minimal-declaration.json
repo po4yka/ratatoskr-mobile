@@ -1,0 +1,9 @@
+{
+  "declared_size_bytes": 65536,
+  "media_type": "application/pdf",
+  "digest": {
+    "algorithm": "sha256",
+    "hex": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "chunk_size_bytes": 65536
+}

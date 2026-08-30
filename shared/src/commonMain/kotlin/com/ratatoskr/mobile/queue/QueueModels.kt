@@ -5,9 +5,12 @@ import com.ratatoskr.mobile.api.generated.model.OperationStatus
 import com.ratatoskr.mobile.capture.CaptureCodec
 import com.ratatoskr.mobile.capture.CaptureOwner
 import com.ratatoskr.mobile.capture.CaptureRequest
+import com.ratatoskr.mobile.transfer.UploadCheckpoint
+import com.ratatoskr.mobile.transfer.generated.TransferBlobRef
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
@@ -117,6 +120,9 @@ data class QueueRecord(
     val operationId: String? = null,
     val conflictingOperationId: String? = null,
     val projection: OperationProjection? = null,
+    @Transient val uploadCheckpoint: UploadCheckpoint? = null,
+    @Transient val uploadReceipt: TransferBlobRef? = null,
+    @Transient val stagedArtifactReclaimable: Boolean = false,
 )
 
 data class QueueClaim(
@@ -199,6 +205,7 @@ enum class QueueRejection {
     StaleClaim,
     OperationMismatch,
     ProjectionConflict,
+    TransferIdentityMismatch,
 }
 
 fun interface QueueClock {
@@ -287,6 +294,65 @@ class CaptureQueue(
             persistence.transaction { records().firstOrNull { it.localId == localId } }
         }
 
+    suspend fun snapshot(): List<QueueRecord> =
+        mutex.withLock {
+            persistence.transaction { records().toList() }
+        }
+
+    suspend fun recordUploadCheckpoint(
+        localId: String,
+        checkpoint: UploadCheckpoint,
+    ): QueueResult<QueueRecord> =
+        mutex.withLock {
+            persistence.transaction {
+                val current =
+                    records().firstOrNull { it.localId == localId }
+                        ?: return@transaction QueueResult.Failure(QueueRejection.NotFound)
+                val file = current.request.payload as? com.ratatoskr.mobile.capture.CapturePayload.FileReference
+                if (
+                    file == null ||
+                    checkpoint.captureLocalId != current.localId ||
+                    checkpoint.captureIdempotencyKey != current.idempotencyKey ||
+                    checkpoint.declaration.declaredSizeBytes != file.byteSize ||
+                    checkpoint.declaration.mediaType != file.mediaType
+                ) {
+                    return@transaction QueueResult.Failure(QueueRejection.TransferIdentityMismatch)
+                }
+                val updated = current.copy(uploadCheckpoint = checkpoint)
+                update(updated)
+                QueueResult.Success(updated)
+            }
+        }
+
+    suspend fun recordUploadReceipt(
+        localId: String,
+        receipt: TransferBlobRef,
+    ): QueueResult<QueueRecord> =
+        mutex.withLock {
+            persistence.transaction {
+                val current =
+                    records().firstOrNull { it.localId == localId }
+                        ?: return@transaction QueueResult.Failure(QueueRejection.NotFound)
+                val declaration =
+                    current.uploadCheckpoint?.declaration
+                        ?: return@transaction QueueResult.Failure(QueueRejection.TransferIdentityMismatch)
+                if (
+                    receipt.digest != declaration.digest ||
+                    receipt.mediaType != declaration.mediaType ||
+                    receipt.lengthBytes != declaration.declaredSizeBytes
+                ) {
+                    return@transaction QueueResult.Failure(QueueRejection.TransferIdentityMismatch)
+                }
+                val updated =
+                    current.copy(
+                        uploadReceipt = receipt,
+                        stagedArtifactReclaimable = current.operationId != null,
+                    )
+                update(updated)
+                QueueResult.Success(updated)
+            }
+        }
+
     suspend fun pendingSubmissions(
         owner: CaptureOwner,
         limit: Int = 8,
@@ -335,6 +401,13 @@ class CaptureQueue(
             val now = clock.now()
             persistence.transaction {
                 val ownerRecords = records().filter { it.request.owner == owner }
+                if (
+                    ownerRecords.any {
+                        it.state == QueueState.InFlight && it.leaseExpiresAt?.let { expiry -> expiry > now } == true
+                    }
+                ) {
+                    return@transaction null
+                }
                 val laneHeads =
                     ownerRecords
                         .filterNot { it.state.isTerminalQueueState() }
@@ -430,6 +503,7 @@ class CaptureQueue(
                                 leaseExpiresAt = null,
                                 failure = null,
                                 operationId = operationId,
+                                stagedArtifactReclaimable = current.uploadReceipt != null,
                             )
                         operationId -> return@transaction QueueResult.Success(current)
                         else ->

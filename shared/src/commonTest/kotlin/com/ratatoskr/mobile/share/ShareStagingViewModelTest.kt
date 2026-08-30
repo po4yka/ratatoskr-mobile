@@ -1,6 +1,7 @@
 package com.ratatoskr.mobile.share
 
 import com.ratatoskr.mobile.capture.CaptureOwner
+import com.ratatoskr.mobile.capture.CapturePayload
 import com.ratatoskr.mobile.capture.CaptureSource
 import com.ratatoskr.mobile.queue.CaptureQueue
 import com.ratatoskr.mobile.queue.QueueClock
@@ -62,6 +63,7 @@ class ShareStagingViewModelTest {
 
             fixture.store.dispatch(ShareStagingAction.Confirm)
             advanceUntilIdle()
+            fixture.store.close()
 
             val queued = assertIs<ShareStagingState.Queued>(fixture.store.state.value)
             assertTrue(queued.message.contains("queued", ignoreCase = true))
@@ -224,6 +226,7 @@ class ShareStagingViewModelTest {
             fixture.store.dispatch(ShareStagingAction.Cancel)
             fixture.store.dispatch(ShareStagingAction.Cancel)
             advanceUntilIdle()
+            fixture.store.close()
 
             assertEquals(1, cancellations)
             assertTrue(fixture.persistence.snapshot().isEmpty())
@@ -263,6 +266,48 @@ class ShareStagingViewModelTest {
             assertTrue(persistence.snapshot().isEmpty())
             store.close()
         }
+
+    @Test
+    fun confirmed_file_enqueues_before_schedule() =
+        runTest {
+            val events = mutableListOf<String>()
+            val fixture = fixture(events, intake = fileIntake())
+
+            fixture.store.dispatch(ShareStagingAction.Confirm)
+            advanceUntilIdle()
+            fixture.store.close()
+
+            val queued = assertIs<ShareStagingState.Queued>(fixture.store.state.value)
+            val record = assertNotNull(fixture.queue.inspect(queued.localId))
+            assertEquals(
+                CapturePayload.FileReference("artifact-1", "synthetic.pdf", "application/pdf", 18),
+                record.request.payload,
+            )
+            assertEquals(listOf("persist"), events)
+        }
+
+    @Test
+    fun cancelled_file_removes_only_unreferenced_draft() =
+        runTest {
+            var cleanupCalls = 0
+            val fixture = fixture(mutableListOf(), intake = fileIntake(), onCancelled = { cleanupCalls += 1 })
+
+            fixture.store.dispatch(ShareStagingAction.Cancel)
+            advanceUntilIdle()
+            fixture.store.close()
+
+            assertEquals(1, cleanupCalls)
+            assertTrue(fixture.persistence.snapshot().isEmpty())
+        }
+
+    private fun fileIntake() =
+        ShareIntake.File(
+            stagedFileId = "artifact-1",
+            displayName = "synthetic.pdf",
+            mediaType = "application/pdf",
+            byteSize = 18,
+            sha256Hex = "a".repeat(64),
+        )
 
     private fun kotlinx.coroutines.test.TestScope.fixture(
         events: MutableList<String>,

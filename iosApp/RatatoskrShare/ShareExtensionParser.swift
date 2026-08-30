@@ -24,6 +24,25 @@ enum ShareParseError: Error, Equatable, Sendable {
   case timedOut
 }
 
+struct ShareFileParser: Sendable {
+  func parse(_ candidates: [ShareFileCandidate]) -> Result<ShareFileCandidate, ShareParseError> {
+    guard candidates.count == 1, let candidate = candidates.first else {
+      return .failure(candidates.isEmpty ? .missingInput : .ambiguous)
+    }
+    guard candidate.sourceURL.isFileURL, !candidate.displayName.isEmpty else {
+      return .failure(.unreadable)
+    }
+    guard Self.supportedTypes.contains(candidate.mediaType) else { return .failure(.unsupported) }
+    guard candidate.sizeBytes > 0 else { return .failure(.unreadable) }
+    guard candidate.sizeBytes <= 100 * 1_024 * 1_024 else { return .failure(.oversized) }
+    return .success(candidate)
+  }
+
+  private static let supportedTypes: Set<String> = [
+    "application/pdf", "image/jpeg", "image/png", "text/plain",
+  ]
+}
+
 struct ShareExtensionParser: Sendable {
   func parse(
     loaders: [any ShareItemLoading],
@@ -182,4 +201,51 @@ struct ItemProviderLoader: ShareItemLoading, @unchecked Sendable {
       }
     }
   }
+}
+
+struct ItemProviderFileStager: @unchecked Sendable {
+  let provider: NSItemProvider
+
+  var supportsFile: Bool {
+    Self.binaryTypes.contains { provider.hasItemConformingToTypeIdentifier($0.type.identifier) }
+      || (provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+        && provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier))
+  }
+
+  func stage(rootURL: URL, artifactID: UUID) async throws -> ShareFileDescriptor {
+    let selected: (type: UTType, mediaType: String) =
+      Self.binaryTypes.first(where: {
+        provider.hasItemConformingToTypeIdentifier($0.type.identifier)
+      }) ?? (type: UTType.plainText, mediaType: "text/plain")
+    return try await withCheckedThrowingContinuation { continuation in
+      provider.loadFileRepresentation(forTypeIdentifier: selected.type.identifier) { url, error in
+        guard error == nil, let url else {
+          continuation.resume(throwing: ShareParseError.unreadable)
+          return
+        }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+          let values = try url.resourceValues(forKeys: [.fileSizeKey])
+          let candidate = ShareFileCandidate(
+            sourceURL: url,
+            mediaType: selected.mediaType,
+            displayName: url.lastPathComponent,
+            sizeBytes: Int64(values.fileSize ?? -1))
+          guard case .success(let accepted) = ShareFileParser().parse([candidate]) else {
+            throw ShareParseError.unsupported
+          }
+          let descriptor = try AppGroupArtifactStore(rootURL: rootURL).stage(
+            accepted, artifactID: artifactID)
+          continuation.resume(returning: descriptor)
+        } catch {
+          continuation.resume(throwing: error)
+        }
+      }
+    }
+  }
+
+  private static let binaryTypes: [(type: UTType, mediaType: String)] = [
+    (.pdf, "application/pdf"), (.jpeg, "image/jpeg"), (.png, "image/png"),
+  ]
 }

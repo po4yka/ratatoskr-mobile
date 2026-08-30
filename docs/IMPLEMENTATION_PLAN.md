@@ -38,7 +38,11 @@
    codec/transport/UDF tests, API 35 shared Compose instrumentation, iOS Simulator graph/framework,
    hosted shell tests, and unsigned shell builds; fixture browse is unsynchronized and this is not
    live GitHub service, connected-account, provider-write, Vault-completion, or physical-device proof.
-8. Add resumable file upload, retention/cleanup, background constraints, revoke/clear-data.
+8. **Complete locally (2026-08-30):** add generated-contract resumable transfer behavior, protected
+   Android/iOS staging and App Group handoff, current-schema checkpoint/receipt persistence,
+   bounded retention/usage, WorkManager/BGProcessing constraints, and marker-last revoke/clear-data.
+   Production delivery remains `IntegrationPending` until Platform publishes a pinned receipt
+   binding; emulator/simulator fixtures are not live Platform or physical-device proof.
 9. Add library/search/deep links/notifications, accessibility and privacy polish.
 10. Add real-device lifecycle, release signing/store profiles, and workspace integration.
 
