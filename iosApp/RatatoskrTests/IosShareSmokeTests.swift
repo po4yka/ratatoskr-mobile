@@ -2,6 +2,48 @@ import Shared
 import XCTest
 
 final class IosShareSmokeTests: XCTestCase {
+  func testShellWiresUniversalLinksNotificationTruthRussianAndPrivateCanaryAbsence() throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let controller = IosApplicationController(
+      queuePath: root.appendingPathComponent("queue.sqlite").path,
+      keychainAccessGroup: "",
+      scheduleNativeWake: { _ in }
+    )
+    defer { controller.close() }
+    controller.configureContentLinkHost(host: "links.ratatoskr.test")
+
+    XCTAssertTrue(
+      controller.acceptLibraryLink(
+        value:
+          "https://links.ratatoskr.test/analyses/abcdef01-0000-4000-8000-000000000001")
+    )
+    XCTAssertEqual(controller.pendingLibraryRouteId(), "abcdef01-0000-4000-8000-000000000001")
+    XCTAssertTrue(
+      controller.acceptLibraryLink(value: "https://links.ratatoskr.test/collections/inbox")
+    )
+    XCTAssertEqual(controller.pendingLibraryRouteId(), "inbox")
+    XCTAssertTrue(
+      controller.acceptLibraryLink(value: "https://links.ratatoskr.test/repos/ratatoskr/mobile")
+    )
+    XCTAssertEqual(controller.pendingLibraryRouteId(), "ratatoskr/mobile")
+    controller.notificationStore.updatePaired(value: true)
+    let notificationState = try XCTUnwrap(
+      controller.notificationStore.state.value as? CompletionNotificationState)
+    XCTAssertEqual(
+      notificationState.effective,
+      CompletionNotificationEffectiveState.integrationpending)
+    XCTAssertEqual(
+      MobileStrings.shared.value(key: .searchtitle, locale: .russian),
+      "Поиск")
+    let publicText = MobileStrings.shared.value(
+      key: .notificationsintegrationpending, locale: .english)
+    for canary in ["private-search", "private-note", "private-user@example.test"] {
+      XCTAssertFalse(publicText.contains(canary))
+    }
+  }
+
   func testSyntheticShareSurvivesExtensionGraphTerminationAndQueueReopenThenRendersTerminalStatus()
     async throws
   {

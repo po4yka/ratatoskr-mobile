@@ -368,7 +368,6 @@ GET  /v1/operations/{id}
 GET  /v1/operations/{id}/events
 GET  /v1/library/search
 PUT  /v1/library/items/{analysis_id}/read-state
-GET  /v1/search
 ```
 
 The client uses generated/strongly typed models from `ratatoskr-contracts` and handles compatible unknown fields/statuses.
@@ -388,7 +387,6 @@ archive.chatgpt
 archive.claude
 library.search
 library.read_state
-search
 ```
 
 The coordinator fetches capabilities after restoration, pairing, and device-root recovery. Unknown
@@ -438,9 +436,11 @@ Archive uploaded, import completed with missing attachments
 
 ## 16. Library and search architecture
 
-The implemented live boundary is a capability-gated blank-query recent page plus pessimistic
-read-state replacement through generated Platform types. It preserves Platform ordering and does
-not add a local cache or synthesize timestamps.
+The implemented live boundary is capability-gated recent and full-text search plus pessimistic
+read-state replacement through generated Platform types. Search trims and validates a 1..512
+Unicode-scalar query, preserves Platform rank, bounds pages, and fences responses by query,
+generation, and offset so an older response cannot replace newer intent. It does not add a local
+index/cache or synthesize timestamps.
 
 Full reader, favorite, note, collection, tag, social-reader, and AI-archive-reader contracts are
 not public. A separate in-memory contract-fixture repository supplies those shared Compose
@@ -455,14 +455,19 @@ Implemented library destinations include:
 ratatoskr://library/analyses/<canonical-uuid>
 ratatoskr://library/social/<x|instagram|threads>/<canonical-uuid>
 ratatoskr://library/ai-archives/<chatgpt|claude>/<canonical-uuid>
+https://<configured-host>/analyses/<canonical-uuid>
+https://<configured-host>/collections/<slug>
+https://<configured-host>/repos/<owner>/<repository>
 Settings
 ```
 
-Android `ACTION_VIEW` and iOS `onOpenURL` forward the raw string into one shared exact parser. The
-parser rejects noncanonical case/UUIDs, query, fragment, credentials, percent encoding, traversal,
-unknown providers, and extra segments. Universal/app links are not configured. Deep links carry
-opaque IDs, not sensitive content or provider tokens; live reads remain authenticated and
-owner-scoped.
+Android `ACTION_VIEW`, iOS `onOpenURL`, and iOS browsing `NSUserActivity` forward the raw string into
+one shared exact parser. The Android manifest and iOS associated-domain entitlement receive the
+same build-configured ASCII-lowercase host. The parser rejects noncanonical case/UUIDs, foreign
+hosts, ports, query, fragment, credentials, percent encoding, traversal, unknown providers, and
+extra segments. Deep links carry opaque identifiers, not sensitive content or provider tokens;
+live reads remain authenticated and owner-scoped. Repository configuration proves shell wiring,
+not deployment of `assetlinks.json`, AASA, DNS, or TLS for that host.
 
 ## 18. Background execution
 
@@ -500,6 +505,13 @@ Notification content is privacy-sensitive and configurable. Lock-screen previews
 The current Android adapter uses a generic Ratatoskr title/outcome only and an immutable explicit
 intent containing one operation UUID. Capture content is never embedded.
 
+The shared policy models Platform subscription availability, user preference, and native OS
+permission separately. Production is `IntegrationPending` because the pinned public contract has
+no subscribe path: it does not request notification permission, register APNs/FCM, or invent an
+endpoint/token exchange. An explicit available-state enable requests native permission once;
+denial routes to system settings without repeated prompts. Revocation removes the local handle and
+preference and asks the native adapter to cancel pending and delivered notifications.
+
 ## 20. Local persistence
 
 A Room 3.0.1 KMP database stores the capture queue. While Ratatoskr remains in development, it has
@@ -530,6 +542,8 @@ queue rules.
 - screenshots/app switcher privacy for sensitive views when configured;
 - local cache purge and device revocation controls;
 - minimal push-notification payloads;
+- closed diagnostics whose records contain only event/outcome enums, never identifiers, errors,
+  URLs, queries, titles, notes, filenames, payloads, or throwables;
 - no cross-user data on shared device sessions;
 - platform backup inclusion/exclusion policy documented per local store.
 
@@ -547,6 +561,14 @@ Native UI must support:
 - localization without truncating critical action meanings.
 
 Capture and external-write confirmations must remain accessible under extension time constraints.
+
+Touched shared Compose routes use reusable heading, live-status, named input, and button primitives
+with explicit semantics and a minimum 48 dp target. The EN/RU typed catalog covers every new
+search, route, notification, loading, error, and action label with English fallback. Palette
+contrast is verified against WCAG ratios; Compose instrumentation verifies roles, names, state
+descriptions/live regions, traversal order, and 2x font-scale semantics. Physical-device
+TalkBack/VoiceOver, switch control, and visual clipping remain release evidence, not simulator
+proof.
 
 ## 23. Performance and battery
 
@@ -621,6 +643,9 @@ background_job_delay
 ```
 
 No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels.
+The implemented `MobileDiagnostics` boundary is stricter: callers can provide only closed event and
+outcome enums. Kermit receives constant enum names and no free-form message, throwable, metadata,
+identifier, query, or content.
 
 ## 27. Testing architecture
 
@@ -634,6 +659,9 @@ No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels
 - operation/partial result mapping;
 - capability behavior;
 - freshness and cache rules.
+- ranked search validation/pagination and stale-response fencing;
+- notification availability/permission/revocation policy;
+- EN/RU catalog, contrast, and content-free diagnostic records.
 
 ### Android tests
 
@@ -642,6 +670,7 @@ No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels
 - Keystore auth;
 - notification/deep-link routing;
 - Compose UI/accessibility;
+- exact configured HTTPS App Links and privacy-safe shell smoke;
 - tablet/foldable behavior.
 
 ### iOS tests
@@ -652,6 +681,7 @@ No URLs, titles, notes, filenames, provider IDs, or content are unbounded labels
 - background URL session resume;
 - Keychain auth;
 - SwiftUI navigation/accessibility.
+- browsing-activity Universal Link routing and native notification permission policy.
 
 ### Integration
 

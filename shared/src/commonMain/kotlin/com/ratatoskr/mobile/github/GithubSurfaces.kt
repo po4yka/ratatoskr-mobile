@@ -1,26 +1,25 @@
 package com.ratatoskr.mobile.github
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
+import com.ratatoskr.mobile.presentation.AccessibleAction
+import com.ratatoskr.mobile.presentation.AccessibleHeading
+import com.ratatoskr.mobile.presentation.AccessibleStatus
 
 data object GithubCatalogRoute : NavKey
 
@@ -36,7 +35,7 @@ fun GithubCatalogSurface(
 ) {
     GithubColumn {
         GithubAction("Back", onClick = onBack)
-        BasicText("GitHub repositories", style = TextStyle(fontSize = 28.sp))
+        AccessibleHeading("GitHub repositories")
         when (state) {
             GithubCatalogState.PairingRequired -> BasicText("Pair this device again")
             GithubCatalogState.CapabilityUnavailable ->
@@ -112,7 +111,7 @@ private fun GithubDetailContent(
     onCancel: (GithubPendingConfirmation) -> Unit,
     onRetryUncertain: () -> Unit,
 ) {
-    BasicText("Live Platform preview")
+    AccessibleHeading("Live Platform preview")
     BasicText(state.preview.target.fullName, style = TextStyle(fontSize = 26.sp))
     BasicText(state.preview.target.canonicalUrl)
     state.preview.description?.let { BasicText(it) }
@@ -131,14 +130,14 @@ private fun GithubDetailContent(
         ) { onSelect(mode) }
     }
     state.pending?.let { pending ->
-        BasicText(
+        AccessibleStatus(
             if (pending.mode == GithubActionMode.Track) {
                 "Ratatoskr desired backup tracking; no completed backup or GitHub write."
             } else {
                 "External GitHub star plus metadata and desired backup request."
             },
         )
-        BasicText(pending.disclosure)
+        AccessibleStatus(pending.disclosure, live = false)
         GithubAction(pending.title) { onConfirm(pending) }
         GithubAction("Cancel") { onCancel(pending) }
     }
@@ -181,18 +180,7 @@ private fun GithubAction(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .background(if (enabled) Color(0xFF315C9D) else Color.LightGray)
-                .clickable(enabled = enabled, onClick = onClick)
-                .padding(12.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText(label, style = TextStyle(color = if (enabled) Color.White else Color.DarkGray))
-    }
+    AccessibleAction(label, enabled = enabled, onClick = onClick)
 }
 
 private val colorStyle = TextStyle(color = Color(0xFFB00020))

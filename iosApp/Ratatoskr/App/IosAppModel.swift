@@ -73,6 +73,11 @@ final class IosAppModel: ObservableObject {
       localArtifactRoots: [privateStagingURL.path],
       eraseLocalData: { KotlinBoolean(bool: eraser.begin(reason: "confirmed_clear_data")) }
     )
+    let linkHost = Bundle.main.object(forInfoDictionaryKey: "RatatoskrLinkHost") as? String ?? ""
+    controller.configureContentLinkHost(host: linkHost)
+    controller.configureLocale(
+      languageCode: Locale.current.language.languageCode?.identifier ?? "en"
+    )
     controllerBox.controller = controller
     self.controller = controller
     self.eraser = eraser
@@ -105,6 +110,13 @@ final class IosAppModel: ObservableObject {
 
   func openLibraryURL(_ url: URL) {
     _ = controller.acceptLibraryLink(value: url.absoluteString)
+  }
+
+  func continueBrowsingUserActivity(_ activity: NSUserActivity) {
+    guard activity.activityType == NSUserActivityTypeBrowsingWeb,
+      let url = activity.webpageURL
+    else { return }
+    openLibraryURL(url)
   }
 
   private func importNextHandoff() async {

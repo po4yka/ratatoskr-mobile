@@ -22,20 +22,25 @@ Generic notifications contain no capture content. Their immutable explicit inten
 validated operation UUID and routes into shared operation detail; the authenticated Platform read
 decides whether that operation is visible to the current device session.
 
-The exported Activity also accepts only `ratatoskr://library/...` links matched by the shared exact
-route table. Native intake forwards the original opaque route string; it does not decode provider
-content or credentials.
+The exported Activity accepts `ratatoskr://library/...` plus exact configured
+`https://<host>/{analyses|collections|repos}/...` links matched by the shared route table. The
+manifest declares the same build-configured host for `autoVerify`; native intake forwards the
+original opaque route string and does not normalize, decode provider content, or carry credentials.
 
 ## iOS
 
 The Share Extension owns bounded `NSExtensionItem` parsing and atomic App Group handoff. The main
-SwiftUI shell forwards `ratatoskr` custom-scheme URLs into the same shared route table. Universal
-links are not configured. Keychain and App Group access groups remain native entitlements.
+SwiftUI shell forwards `ratatoskr` custom-scheme URLs and raw
+`NSUserActivityTypeBrowsingWeb` URLs into the same shared route table. The associated-domain
+entitlement uses the same build-configured host as the parser. Keychain, App Group, and associated
+domain configuration remain native entitlements.
 
 ## Shared/Platform
 
 Generated API models currently back device pair/refresh/revoke, capabilities, URL capture submit,
-operation list/detail, recent library search, and read-state replacement. The shared submission adapter sends the persisted idempotency key and
+operation list/detail, ranked library search, and read-state replacement. Full-text search calls
+only the pinned `GET /v1/library/search` resource, preserves server order, and bounds/fences
+pagination; it does not create a second search authority. The shared submission adapter sends the persisted idempotency key and
 one generated `SubmitCapture` body, follows no redirects, permits one serialized session
 refresh/recovery, and stores `202 Accepted` operation identity without declaring success.
 
@@ -55,6 +60,12 @@ confirmation evidence, and idempotency key. It never receives a provider token.
 `track` and `star` confirmations are immutable and one-shot. `star` names the external provider
 write and opaque acting account. Component results remain separate, and desired-backup `accepted`
 means policy accepted for publication, never that Vault completed a backup.
+
+The public contract exposes no notification subscription path. The production notification policy
+therefore reports `IntegrationPending`, requests no OS permission, registers no APNs/FCM token, and
+makes no Platform call. Native Android and iOS permission/settings adapters are exercised only by
+the explicit available-contract policy fixture. Generic local operation notifications carry one
+validated operation UUID and no user content.
 
 ## Rules
 

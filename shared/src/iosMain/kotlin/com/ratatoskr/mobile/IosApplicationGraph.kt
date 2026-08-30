@@ -2,6 +2,9 @@ package com.ratatoskr.mobile
 
 import com.ratatoskr.mobile.capture.CaptureOwner
 import com.ratatoskr.mobile.capture.CaptureSource
+import com.ratatoskr.mobile.diagnostics.MobileDiagnosticEvent
+import com.ratatoskr.mobile.diagnostics.MobileDiagnosticOutcome
+import com.ratatoskr.mobile.diagnostics.MobileDiagnostics
 import com.ratatoskr.mobile.github.AuthorizedGithubRepository
 import com.ratatoskr.mobile.github.GithubAccess
 import com.ratatoskr.mobile.github.GithubActionIdentity
@@ -15,12 +18,18 @@ import com.ratatoskr.mobile.identity.IosKeychainCredentialStorage
 import com.ratatoskr.mobile.identity.KtorPlatformIdentityApi
 import com.ratatoskr.mobile.identity.MobileCapability
 import com.ratatoskr.mobile.library.AuthorizedLibraryRepository
+import com.ratatoskr.mobile.library.ContentLinkConfiguration
 import com.ratatoskr.mobile.library.ContentRouteResult
 import com.ratatoskr.mobile.library.ContentRouteTable
 import com.ratatoskr.mobile.library.KtorPlatformLibraryApi
 import com.ratatoskr.mobile.library.LibraryAccess
 import com.ratatoskr.mobile.library.LibraryApplicationGraph
 import com.ratatoskr.mobile.library.routeIdOrNull
+import com.ratatoskr.mobile.notification.CompletionNotificationStore
+import com.ratatoskr.mobile.notification.CompletionSubscriptionAvailability
+import com.ratatoskr.mobile.notification.IntegrationPendingCompletionSubscriptionPort
+import com.ratatoskr.mobile.notification.IntegrationPendingNativeNotificationPermissionPort
+import com.ratatoskr.mobile.notification.NativeNotificationPermissionState
 import com.ratatoskr.mobile.operation.AuthorizedOperationStatusRepository
 import com.ratatoskr.mobile.operation.KtorPlatformOperationsApi
 import com.ratatoskr.mobile.operation.OperationDetailStore
@@ -28,6 +37,7 @@ import com.ratatoskr.mobile.operation.OperationListStore
 import com.ratatoskr.mobile.operation.OperationPollingDelay
 import com.ratatoskr.mobile.operation.OperationRepositoryResult
 import com.ratatoskr.mobile.operation.OperationStatusRepository
+import com.ratatoskr.mobile.presentation.MobileLocale
 import com.ratatoskr.mobile.queue.CaptureQueue
 import com.ratatoskr.mobile.queue.QueueClock
 import com.ratatoskr.mobile.queue.QueueJitter
@@ -61,6 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -172,6 +183,7 @@ class IosApplicationController(
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val diagnostics = MobileDiagnostics()
     private val clock = QueueClock { now() }
     private val client = HttpClient(Darwin) { followRedirects = false }
     val sessions =
@@ -214,6 +226,15 @@ class IosApplicationController(
                     ClearDataResult.Failed(NSUUID.UUID().UUIDString.lowercase())
                 }
             },
+            scope = scope,
+        )
+    val notificationStore =
+        CompletionNotificationStore(
+            availability = CompletionSubscriptionAvailability.IntegrationPending,
+            paired = false,
+            permission = NativeNotificationPermissionState.NotDetermined,
+            native = IntegrationPendingNativeNotificationPermissionPort,
+            subscriptions = IntegrationPendingCompletionSubscriptionPort,
             scope = scope,
         )
     private val scheduler = SubmissionScheduler { instant -> scheduleNativeWake(instant?.toEpochMilliseconds()) }
@@ -285,10 +306,25 @@ class IosApplicationController(
     internal var activeDetailStore: OperationDetailStore? = null
     internal var sceneActive = true
     internal val libraryRoute = MutableStateFlow<ContentRouteResult?>(null)
+    private var contentLinkConfiguration = ContentLinkConfiguration()
+    internal var locale = MobileLocale.English
+        private set
+
+    fun configureContentLinkHost(host: String) {
+        contentLinkConfiguration = ContentLinkConfiguration(setOf(host))
+    }
+
+    fun configureLocale(languageCode: String) {
+        locale = if (languageCode == "ru") MobileLocale.Russian else MobileLocale.English
+    }
 
     fun acceptLibraryLink(value: String): Boolean {
-        val parsed = ContentRouteTable.parse(value)
-        if (parsed !is ContentRouteResult.Accepted) return false
+        val parsed = ContentRouteTable.parse(value, contentLinkConfiguration)
+        if (parsed !is ContentRouteResult.Accepted) {
+            diagnostics.record(MobileDiagnosticEvent.LinkRejected, MobileDiagnosticOutcome.Rejected)
+            return false
+        }
+        diagnostics.record(MobileDiagnosticEvent.LinkAccepted, MobileDiagnosticOutcome.Succeeded)
         libraryRoute.value = parsed
         return true
     }
@@ -303,6 +339,11 @@ class IosApplicationController(
         scope.launch {
             sessions.restore()
             reconcile()
+        }
+        scope.launch {
+            sessions.state.collect { identity ->
+                notificationStore.updatePaired(identity is DeviceIdentityState.Paired)
+            }
         }
     }
 

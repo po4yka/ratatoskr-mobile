@@ -59,6 +59,8 @@ jobs:
           ./tooling/tests/gate_parity_test.sh
           ./tooling/tests/platform_library_contract_test.sh
           ./tooling/tests/github_contract_fixture_test.sh
+          ./tooling/tests/app_link_shell_test.sh
+          ./tooling/tests/privacy_source_gate_test.sh
 
       - name: Kotlin lint
         run: ./gradlew --no-daemon ktlintCheck
@@ -74,7 +76,9 @@ jobs:
       - name: >-
           Shared Android tests including CaptureQueueIdempotencyTest, PlatformLibraryApiTest,
           LibraryListStoreTest, FixtureUserContentRepositoryTest, LibraryReaderStoreTest,
-          ContentRouteTableTest, GithubContractCodecTest, PlatformGithubApiTest,
+          ContentRouteTableTest, LibrarySearchStoreTest, CompletionNotificationStoreTest,
+          MobileStringsTest, AccessiblePaletteTest, MobileDiagnosticsTest,
+          GithubContractCodecTest, PlatformGithubApiTest,
           GithubCatalogStoreTest, GithubConfirmationStoreTest, GithubActionOutcomeStoreTest,
           BlobTransferContractTest, ResumableUploadCoordinatorTest, ArtifactRetentionPolicyTest,
           TransferSchedulingPolicyTest, LocalDataErasureCoordinatorTest,
@@ -85,7 +89,8 @@ jobs:
           Android Keystore, AndroidCaptureQueuePersistenceTest, AndroidShareIntentParserTest,
           ShareStagingUiTest, CaptureSubmissionWorkerTest, OperationStatusUiTest,
           CaptureStatusNotificationTest, AndroidShareSmokeTest, LibraryDeepLinkIntentTest,
-          LibraryUiTest, GithubCatalogUiTest, AndroidStagedArtifactStoreTest,
+          LibraryUiTest, AndroidAppLinkIntentTest, LibrarySearchUiTest, AccessibilityUiTest,
+          GithubCatalogUiTest, AndroidStagedArtifactStoreTest,
           FileUploadWorkerTest, AndroidLocalDataErasureInstrumentedTest, and LocalStorageUiTest instrumentation
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -97,6 +102,8 @@ jobs:
             ./gradlew --no-daemon
             :shared:connectedDebugAndroidTest
             :androidApp:connectedDebugAndroidTest
+          # AndroidShareSmokeTest marker:
+          # shell_wires_search_https_routes_notification_truth_russian_and_accessible_navigation
 
       - name: Retain synthetic Android share test reports
         if: always()
@@ -157,8 +164,12 @@ jobs:
           ShareExtensionParserTests, AppGroupEnvelopeTests, AppGroupInboxImporterTests,
           IosKeychainCredentialStorageTests, IosSubmissionSchedulerTests,
           IosFileUploadSchedulerTests, IosLocalDataErasureTests, IosLocalStorageSurfaceSmokeTests,
-          IosSubmissionStatusFlowTests, IosShareSmokeTests, and IosLibraryRoutingTests
+          IosSubmissionStatusFlowTests, IosNotificationPermissionTests, IosShareSmokeTests,
+          and IosLibraryRoutingTests
         run: |
+          # Hosted smoke markers: testConfiguredUniversalLinksForwardRawAndResolveCanonicalDestinations,
+          # testForeignOrAmbiguousUniversalLinksAreRejected, testBrowsingUserActivityUsesTheSharedRouteTable,
+          # testShellWiresUniversalLinksNotificationTruthRussianAndPrivateCanaryAbsence.
           simulator_id="$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.isAvailable and (.name | startswith("iPhone")))][0].udid')"
           xcodebuild -quiet -project iosApp/Ratatoskr.xcodeproj -scheme Ratatoskr -sdk iphonesimulator -destination "platform=iOS Simulator,id=$simulator_id" -resultBundlePath build/ios-share-test-results.xcresult test
 

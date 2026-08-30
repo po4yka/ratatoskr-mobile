@@ -5,6 +5,52 @@ import kotlin.test.assertEquals
 
 class ContentRouteTableTest {
     @Test
+    fun canonical_https_analysis_collection_and_repository_routes_resolve() {
+        val configuration = ContentLinkConfiguration(setOf("links.ratatoskr.test"))
+        val cases =
+            mapOf(
+                "https://links.ratatoskr.test/analyses/$ID" to ArticleReaderRoute(ID),
+                "https://links.ratatoskr.test/collections/research" to CollectionRoute("research"),
+                "https://links.ratatoskr.test/repos/ratatoskr/mobile" to RepositoryRoute("ratatoskr", "mobile"),
+            )
+
+        cases.forEach { (input, expected) ->
+            assertEquals(ContentRouteResult.Accepted(expected), ContentRouteTable.parse(input, configuration), input)
+        }
+    }
+
+    @Test
+    fun custom_scheme_routes_remain_compatible() {
+        assertEquals(
+            ContentRouteResult.Accepted(ArticleReaderRoute(ID)),
+            ContentRouteTable.parse("ratatoskr://library/analyses/$ID", ContentLinkConfiguration(setOf("links.ratatoskr.test"))),
+        )
+    }
+
+    @Test
+    fun scheme_host_port_credentials_encoding_traversal_query_fragment_identifier_and_extra_segment_variants_are_rejected() {
+        val configuration = ContentLinkConfiguration(setOf("links.ratatoskr.test"))
+        val invalid =
+            listOf(
+                "HTTPS://links.ratatoskr.test/analyses/$ID",
+                "https://LINKS.ratatoskr.test/analyses/$ID",
+                "https://user@links.ratatoskr.test/analyses/$ID",
+                "https://links.ratatoskr.test:443/analyses/$ID",
+                "https://links.ratatoskr.test/analyses/%61bcdef01-0000-4000-8000-000000000001",
+                "https://links.ratatoskr.test/analyses/../$ID",
+                "https://links.ratatoskr.test/analyses/$ID?query=private",
+                "https://links.ratatoskr.test/analyses/$ID#private",
+                "https://links.ratatoskr.test/analyses/${ID.uppercase()}",
+                "https://links.ratatoskr.test/collections/Research",
+                "https://links.ratatoskr.test/repos/-owner/mobile",
+                "https://links.ratatoskr.test/repos/ratatoskr/mobile/extra",
+                "https://foreign.example/analyses/$ID",
+            )
+
+        invalid.forEach { assertEquals(ContentRouteResult.Invalid, ContentRouteTable.parse(it, configuration), it) }
+    }
+
+    @Test
     fun article_social_and_ai_archive_matrix_maps_to_distinct_routes() {
         val cases =
             mapOf(

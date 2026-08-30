@@ -2,12 +2,20 @@ plugins {
     id("ratatoskr.android.application")
 }
 
+val ratatoskrLinkHost = providers.gradleProperty("ratatoskr.linkHost").orElse("links.ratatoskr.test")
+
 android {
     namespace = "com.ratatoskr.mobile"
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "com.ratatoskr.mobile"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["ratatoskrLinkHost"] = ratatoskrLinkHost.get()
+        buildConfigField("String", "RATATOSKR_LINK_HOST", "\"${ratatoskrLinkHost.get()}\"")
     }
 }
 

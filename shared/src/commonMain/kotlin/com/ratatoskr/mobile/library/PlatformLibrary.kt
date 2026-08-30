@@ -43,6 +43,13 @@ interface PlatformLibraryApi {
         offset: Int = 0,
     ): PlatformLibraryResult<LibraryPage>
 
+    suspend fun search(
+        authorization: Authorization,
+        query: String,
+        limit: Int = 25,
+        offset: Int = 0,
+    ): PlatformLibraryResult<LibraryPage> = PlatformLibraryResult.Unavailable(retryable = false)
+
     suspend fun replaceReadState(
         authorization: Authorization,
         analysisId: String,
@@ -54,16 +61,39 @@ class KtorPlatformLibraryApi(
     private val client: HttpClient,
     private val json: Json = libraryJson,
 ) : PlatformLibraryApi {
+    override suspend fun search(
+        authorization: Authorization,
+        query: String,
+        limit: Int,
+        offset: Int,
+    ): PlatformLibraryResult<LibraryPage> {
+        val normalized = query.trim()
+        if (normalized.isEmpty() || normalized.scalarCount() > 512 || limit !in 1..100 || offset < 0) {
+            return unavailable(retryable = false)
+        }
+        return pageRequest(authorization, normalized, limit, offset)
+    }
+
     override suspend fun recent(
         authorization: Authorization,
         limit: Int,
         offset: Int,
     ): PlatformLibraryResult<LibraryPage> {
         if (limit !in 1..100 || offset < 0) return unavailable(retryable = false)
+        return pageRequest(authorization, query = null, limit, offset)
+    }
+
+    private suspend fun pageRequest(
+        authorization: Authorization,
+        query: String?,
+        limit: Int,
+        offset: Int,
+    ): PlatformLibraryResult<LibraryPage> {
         val response =
             request {
                 client.get("${authorization.origin}/v1/library/search") {
                     bearerAuth(authorization.accessToken)
+                    query?.let { parameter("q", it) }
                     parameter("limit", limit)
                     parameter("offset", offset)
                 }

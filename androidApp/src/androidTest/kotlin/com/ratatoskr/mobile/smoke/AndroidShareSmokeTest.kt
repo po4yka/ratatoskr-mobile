@@ -2,8 +2,13 @@ package com.ratatoskr.mobile.smoke
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -20,8 +25,12 @@ import com.ratatoskr.mobile.capture.CaptureOwner
 import com.ratatoskr.mobile.capture.CapturePayload
 import com.ratatoskr.mobile.identity.AndroidKeystoreCredentialStorage
 import com.ratatoskr.mobile.identity.DeviceCredentials
+import com.ratatoskr.mobile.notification.CompletionNotificationEffectiveState
 import com.ratatoskr.mobile.operation.OperationRepositoryResult
 import com.ratatoskr.mobile.operation.OperationStatusRepository
+import com.ratatoskr.mobile.presentation.MobileLocale
+import com.ratatoskr.mobile.presentation.MobileStringKey
+import com.ratatoskr.mobile.presentation.MobileStrings
 import com.ratatoskr.mobile.queue.CaptureQueue
 import com.ratatoskr.mobile.queue.QueueClock
 import com.ratatoskr.mobile.queue.QueueJitter
@@ -188,6 +197,47 @@ class AndroidShareSmokeTest {
         }
     }
 
+    @Test
+    fun shell_wires_search_https_routes_notification_truth_russian_and_accessible_navigation() =
+        runBlocking {
+            val application = compose.activity.application as RatatoskrApplication
+            application.container.sessions.signOut()
+            AndroidKeystoreCredentialStorage(application).save(credentials())
+            application.container.sessions.restore()
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText("Library").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            compose.onNode(hasText("Library") and button()).performClick()
+            compose.onNodeWithText("Search library").performClick()
+            compose.onNode(hasText("Search") and isHeading()).assertIsDisplayed()
+
+            compose.activityRule.scenario.onActivity {
+                assertTrue(
+                    it.acceptLibraryLink(
+                        "https://links.ratatoskr.test/analyses/abcdef01-0000-4000-8000-000000000001",
+                    ),
+                )
+                assertEquals("abcdef01-0000-4000-8000-000000000001", it.pendingContentRouteId)
+                assertTrue(it.acceptLibraryLink("https://links.ratatoskr.test/collections/inbox"))
+                assertEquals("inbox", it.pendingContentRouteId)
+                assertTrue(it.acceptLibraryLink("https://links.ratatoskr.test/repos/ratatoskr/mobile"))
+                assertEquals("ratatoskr/mobile", it.pendingContentRouteId)
+            }
+
+            assertEquals(
+                CompletionNotificationEffectiveState.IntegrationPending,
+                application.container.notificationStore.state.value.effective,
+            )
+            assertEquals("Поиск", MobileStrings.value(MobileStringKey.SearchTitle, MobileLocale.Russian))
+            val publicText =
+                MobileStrings.value(MobileStringKey.NotificationsIntegrationPending, MobileLocale.English)
+            listOf("private-search", "private-note", "private-user@example.test").forEach {
+                assertTrue(it !in publicText)
+            }
+            application.container.sessions.signOut()
+        }
+
     private fun reopenedQueue(application: RatatoskrApplication) =
         CaptureQueue(
             persistence = createAndroidQueuePersistence(application),
@@ -207,6 +257,8 @@ class AndroidShareSmokeTest {
             refreshToken = "synthetic-refresh-token",
             refreshExpiresAt = "2026-08-30T00:00:00Z",
         )
+
+    private fun button() = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
 
     private fun terminalSnapshot() =
         OperationSnapshot(

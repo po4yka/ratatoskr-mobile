@@ -22,6 +22,11 @@ import com.ratatoskr.mobile.library.AuthorizedLibraryRepository
 import com.ratatoskr.mobile.library.KtorPlatformLibraryApi
 import com.ratatoskr.mobile.library.LibraryAccess
 import com.ratatoskr.mobile.library.LibraryApplicationGraph
+import com.ratatoskr.mobile.notification.CompletionNotificationStore
+import com.ratatoskr.mobile.notification.CompletionSubscriptionAvailability
+import com.ratatoskr.mobile.notification.IntegrationPendingCompletionSubscriptionPort
+import com.ratatoskr.mobile.notification.IntegrationPendingNativeNotificationPermissionPort
+import com.ratatoskr.mobile.notification.NativeNotificationPermissionState
 import com.ratatoskr.mobile.notification.createAndroidCaptureStatusNotifier
 import com.ratatoskr.mobile.operation.AuthorizedOperationStatusRepository
 import com.ratatoskr.mobile.operation.KtorPlatformOperationsApi
@@ -195,6 +200,15 @@ class AndroidApplicationContainer(
             },
             scope = appScope,
         )
+    val notificationStore =
+        CompletionNotificationStore(
+            availability = CompletionSubscriptionAvailability.IntegrationPending,
+            paired = false,
+            permission = NativeNotificationPermissionState.NotDetermined,
+            native = IntegrationPendingNativeNotificationPermissionPort,
+            subscriptions = IntegrationPendingCompletionSubscriptionPort,
+            scope = appScope,
+        )
 
     suspend fun drainFileUpload(opaqueOwnerWorkKey: String): FileUploadDrainOutcome {
         val record = queue.inspect(opaqueOwnerWorkKey) ?: return FileUploadDrainOutcome.Complete
@@ -308,6 +322,11 @@ class AndroidApplicationContainer(
 
     fun start() {
         appScope.launch { sessions.restore() }
+        appScope.launch {
+            sessions.state.collectLatest { identity ->
+                notificationStore.updatePaired(identity is DeviceIdentityState.Paired)
+            }
+        }
         appScope.launch {
             productionShareSubmissionAccess.collectLatest { access ->
                 if (access == ShareSubmissionAccess.Available) scheduler.schedule(null)

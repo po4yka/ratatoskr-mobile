@@ -1,13 +1,9 @@
 package com.ratatoskr.mobile.library
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
@@ -18,13 +14,87 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ratatoskr.mobile.api.generated.model.ReadState
+import com.ratatoskr.mobile.presentation.AccessibleAction
+import com.ratatoskr.mobile.presentation.AccessibleHeading
+import com.ratatoskr.mobile.presentation.AccessibleStatus
+import com.ratatoskr.mobile.presentation.AccessibleTextInput
+import com.ratatoskr.mobile.presentation.LocalMobileLocale
+import com.ratatoskr.mobile.presentation.MobileStringKey
+import com.ratatoskr.mobile.presentation.MobileStrings
+
+@Composable
+@Suppress("ktlint:standard:function-naming")
+fun LibrarySearchSurface(
+    state: LibrarySearchState,
+    onQueryChanged: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+    onOpen: (LibraryItemPresentation) -> Unit,
+) {
+    val locale = LocalMobileLocale.current
+
+    fun string(key: MobileStringKey) = MobileStrings.value(key, locale)
+    LibraryColumn {
+        AccessibleHeading(string(MobileStringKey.SearchTitle))
+        BasicText("${string(MobileStringKey.SearchQueryLabel)}: ${state.query}")
+        AccessibleTextInput(
+            value = state.query,
+            label = string(MobileStringKey.SearchHint),
+            onValueChange = onQueryChanged,
+        )
+        LibraryAction(string(MobileStringKey.SearchAction), onClick = onSubmit)
+        when (state) {
+            is LibrarySearchState.Idle -> Unit
+            is LibrarySearchState.Invalid -> AccessibleStatus(string(MobileStringKey.SearchInvalid))
+            is LibrarySearchState.Loading -> AccessibleStatus(string(MobileStringKey.SearchLoading))
+            is LibrarySearchState.Empty -> AccessibleStatus(string(MobileStringKey.SearchEmpty))
+            is LibrarySearchState.CapabilityUnavailable -> {
+                AccessibleStatus(string(MobileStringKey.SearchUnavailable))
+            }
+            is LibrarySearchState.Offline -> {
+                AccessibleStatus(string(MobileStringKey.SearchOffline))
+                LibraryAction(string(MobileStringKey.SearchRetry), onClick = onRetry)
+            }
+            is LibrarySearchState.Unavailable -> AccessibleStatus(string(MobileStringKey.SearchUnavailable))
+            is LibrarySearchState.RePairingRequired -> AccessibleStatus(string(MobileStringKey.SearchRepairPairing))
+            is LibrarySearchState.Content -> {
+                AccessibleHeading(string(MobileStringKey.SearchResults))
+                state.items.forEach { item ->
+                    val readState =
+                        if (item.readState == ReadState.READ) {
+                            string(MobileStringKey.SearchRead)
+                        } else {
+                            string(MobileStringKey.SearchUnread)
+                        }
+                    Column(
+                        modifier = Modifier.fillMaxWidth().border(1.dp, Color.LightGray).padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        LibraryAction(
+                            label = item.title,
+                            accessibleLabel = "${item.title}, $readState",
+                        ) { onOpen(item) }
+                        BasicText(readState)
+                        item.snippet?.let { BasicText(it) }
+                        item.score?.let { BasicText("${string(MobileStringKey.SearchRelevance)}: $it") }
+                    }
+                }
+                when {
+                    state.loadingMore -> AccessibleStatus(string(MobileStringKey.SearchLoadingMore))
+                    state.nextPageRetryable -> LibraryAction(string(MobileStringKey.SearchRetry), onClick = onRetry)
+                    state.hasMore -> LibraryAction(string(MobileStringKey.SearchLoadMore), onClick = onLoadMore)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 @Suppress("ktlint:standard:function-naming")
@@ -34,9 +104,11 @@ fun LibraryListSurface(
     onReplaceReadState: (String, ReadState) -> Unit,
     onOpen: (LibraryReaderRequest) -> Unit,
     onOpenFixtures: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
 ) {
     LibraryColumn {
-        BasicText("Library", style = TextStyle(fontSize = 28.sp))
+        AccessibleHeading("Library")
+        LibraryAction("Search library", onClick = onOpenSearch)
         LibraryAction("Contract fixture preview", onClick = onOpenFixtures)
         when (state) {
             LibraryListState.Idle -> LibraryAction("Load library", onClick = onRefresh)
@@ -173,6 +245,29 @@ fun LibraryReaderSurface(
 
 @Composable
 @Suppress("ktlint:standard:function-naming")
+fun CollectionDestinationSurface(
+    collectionId: String,
+    catalog: FixtureCatalog,
+    onOpen: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    LibraryColumn {
+        LibraryAction("Back to library", onClick = onBack)
+        val collection = catalog.collections.firstOrNull { it.id == collectionId }
+        if (collection == null) {
+            BasicText("Collection is integration pending or unavailable")
+        } else {
+            BasicText(collection.name, style = TextStyle(fontSize = 28.sp))
+            BasicText("Contract fixture collection — not synchronized; resets when Ratatoskr restarts.")
+            catalog.items
+                .filter { collectionId in it.collectionIds }
+                .forEach { item -> LibraryAction(item.title) { onOpen(item.id) } }
+        }
+    }
+}
+
+@Composable
+@Suppress("ktlint:standard:function-naming")
 private fun LibraryColumn(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp),
@@ -186,21 +281,11 @@ private fun LibraryColumn(content: @Composable () -> Unit) {
 @Suppress("ktlint:standard:function-naming")
 private fun LibraryAction(
     label: String,
+    accessibleLabel: String = label,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .background(if (enabled) Color(0xFF315C9D) else Color.LightGray)
-                .clickable(enabled = enabled, onClick = onClick)
-                .padding(12.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText(label, style = TextStyle(color = if (enabled) Color.White else Color.DarkGray))
-    }
+    AccessibleAction(label, accessibleLabel, enabled, onClick)
 }
 
 private fun LibraryMutationError.safeMessage(): String =

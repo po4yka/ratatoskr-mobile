@@ -12,7 +12,11 @@
 > submission. Live recent analyses/read-state plus an explicitly unsynchronized contract-fixture
 > reader/curation preview are available in shared Compose. Capability-gated GitHub fixture
 > browse/search, live Platform preview, and explicitly confirmed metadata/track/star actions are
-> also available. File uploads are not implemented yet.
+> also available. Generated resumable-file behavior and bounded native staging exist, while live
+> file delivery remains visibly integration-pending until Platform publishes a receipt binding.
+> Full-text library search, exact App/Universal Link routing, EN/RU labels, accessible shared
+> controls, and content-free diagnostics are implemented. Completion notifications remain
+> integration-pending because the public contract exposes no subscribe path.
 
 The bootstrap deployment floors are Android 8.0/API 26 and iOS 18.5. The iOS floor matches the
 prebuilt Compose 1.11.1 runtime linked by the shared framework.
@@ -237,10 +241,12 @@ and never sends a Platform request. Article blocks render as inert Compose text 
 warnings; Instagram/Threads fixtures do not claim native Saved authority, and AI archive fixtures
 retain supplied import-completeness facts.
 
-Native shells accept only the strict custom-scheme table documented in OpenSpec. Route payloads are
-opaque canonical UUIDs; query strings, fragments, credentials, percent encoding, traversal, unknown
-providers, and extra segments are rejected before repository access. Search beyond the blank-query
-recent page, universal links, and durable local library caching remain future work.
+Native shells accept the strict custom-scheme table and configured HTTPS analysis, collection, and
+repository routes documented in OpenSpec. Route payloads are opaque canonical identifiers; query
+strings, fragments, credentials, ports, percent encoding, traversal, foreign hosts, and extra
+segments are rejected before repository access. Full-text search uses the same generated
+`GET /v1/library/search` authority with fenced pagination; durable local library caching remains
+future work.
 
 ## Authentication and device identity
 
@@ -283,7 +289,10 @@ Security requirements:
 
 ## Notifications
 
-Push or local notifications may report:
+The notification settings surface separates native permission from Platform subscribe-path
+availability. The pinned public contract has no subscribe path, so production shows
+`IntegrationPending`, requests no OS permission, registers no APNs/FCM token, and makes no guessed
+Platform call. If a reviewed contract later enables the path, generic notifications may report:
 
 - capture completed;
 - operation completed with warnings;
@@ -293,7 +302,9 @@ Push or local notifications may report:
 - ChatGPT/Claude export backup is stale;
 - queued captures waiting for connectivity.
 
-Notification payloads should contain opaque operation identifiers and minimal text; sensitive content is fetched after authenticated app open.
+Notification payloads contain an opaque operation identifier and generic Ratatoskr text; sensitive
+content is fetched only after authenticated app open. Revocation clears local notification state
+and pending/delivered native notifications.
 
 ## API and compatibility
 
@@ -330,7 +341,10 @@ Current coverage includes:
 - Android Share Target parsing/staging, durable WorkManager submission, operation list/detail,
   notification/deep-link, and deterministic API 35 emulator smoke tests;
 - generated library transport, capability/UDF, fixture curation, inert reader, exact route-table,
-  Android shared Compose/deep-link, and iOS shared/hosted routing tests;
+  ranked full-text search, Android shared Compose/App Link, and iOS shared/hosted Universal Link
+  routing tests;
+- notification availability/permission/revocation tests, EN/RU catalog parity, tested contrast,
+  Compose accessibility semantics/48 dp targets, and mutation-tested content-free diagnostics;
 - pinned GitHub interaction contracts, strict codec/transport/capability/action stores, API 35
   shared Compose instrumentation, and iOS shared graph linkage;
 - deterministic generation and digest drift checks, including mutated, stale, missing, and orphaned
@@ -345,7 +359,7 @@ Later feature coverage will add:
 - physical-device Android share/background lifecycle and live Platform scenarios;
 - large attachment and expired URI fixtures;
 - operation-progress contract tests;
-- screenshot/accessibility tests;
+- visual regression and physical-device accessibility checks;
 - baseline profiles and launch/performance tests;
 - workspace end-to-end tests against isolated Compose profiles.
 
@@ -369,8 +383,9 @@ Later feature coverage will add:
 6. Add notes, collections, retry, and operation progress.
 7. Add file/PDF sharing with safe temporary-file handling.
 8. Add GitHub mode selection and social URL recognition.
-9. Add library, reader, and search surfaces.
-10. Add notifications, accessibility, performance, and full workspace E2E coverage.
+9. Add library, reader, search, deep links, truthful notification settings, accessibility, and
+   privacy polish.
+10. Add physical-device lifecycle, performance, release signing/store, and workspace E2E coverage.
 
 ## Workspace integration
 
@@ -381,16 +396,18 @@ and an isolated workspace deployment.
 
 ## Project status
 
-Plan items 1 through 8 are implemented at repository level: Android/iOS shells, the shared/native ADR,
+Plan items 1 through 9 are implemented at repository level: Android/iOS shells, the shared/native ADR,
 pinned generated Platform models, device pairing/session behavior, native secure storage,
 capability discovery, bounded capture/queue models, Room KMP persistence, Android URL share intake,
 offline submission, iOS Share Extension handoff, operation status, generic notifications, live
 recent/read-state library access, strict content routing, fixture readers/curation,
 capability-gated GitHub fixture discovery and confirmed Platform actions, protected file staging,
-resumable contract behavior, bounded retention, native scheduling, replay-safe local erasure, and
-lint/test/build CI exist. Evidence
+resumable contract behavior, bounded retention, native scheduling, replay-safe local erasure,
+ranked library search, exact configured HTTPS routing, truthful notification availability, EN/RU
+labels, accessible shared primitives, content-free diagnostics, and lint/test/build CI exist. Evidence
 covers deterministic transport and queue tests, Android Emulator Keystore/Room/share smoke,
 app-hosted iOS Simulator Keychain, shared tests, and application builds; it does not prove live
 Platform pairing/submission/GitHub actions or full reader/curation, a physical-device run,
-signing/provisioning, provider integration, Vault completion, universal links, physical-device
-queue protection/background delivery, or a live public file receipt binding.
+signing/provisioning, provider integration, Vault completion, deployed App/Universal Link
+association files, APNs/FCM delivery, physical-device queue protection/background/accessibility,
+or a live public file receipt binding.

@@ -28,6 +28,7 @@ test_entitlements="$repository_root/iosApp/RatatoskrTests/RatatoskrTestHost.enti
 for plist in "$app_entitlements" "$extension_entitlements" "$test_entitlements"; do
     assert_exact_array "$plist" "com.apple.security.application-groups" \
         "group.com.ratatoskr.mobile" "exact_app_group_${plist##*/}"
+    # shellcheck disable=SC2016 # Xcode expands this literal entitlement placeholder.
     assert_exact_array "$plist" "keychain-access-groups" \
         '$(AppIdentifierPrefix)com.ratatoskr.mobile.shared' "exact_keychain_group_${plist##*/}"
     if [[ -f "$plist" ]] && grep -Eq '\*|Ratatoskr Next' "$plist"; then
@@ -36,10 +37,15 @@ for plist in "$app_entitlements" "$extension_entitlements" "$test_entitlements";
     fi
 done
 
+# shellcheck disable=SC2016 # Xcode expands this literal entitlement placeholder.
+assert_exact_array "$app_entitlements" "com.apple.developer.associated-domains" \
+    'applinks:$(RATATOSKR_LINK_HOST)' "exact_universal_link_domain"
+
 required_project_markers=(
     'CODE_SIGN_ENTITLEMENTS = Ratatoskr/Ratatoskr.entitlements;'
     'CODE_SIGN_ENTITLEMENTS = RatatoskrShare/RatatoskrShare.entitlements;'
     'RatatoskrShare.appex in Embed App Extensions'
+    'RATATOSKR_LINK_HOST = links.ratatoskr.test;'
 )
 for marker in "${required_project_markers[@]}"; do
     if ! grep -Fq -- "$marker" "$project"; then
@@ -50,6 +56,14 @@ done
 
 if ! grep -Fq -- 'com.ratatoskr.mobile.submission.refresh' "$repository_root/iosApp/Ratatoskr/Info.plist"; then
     echo "not ok - reviewed_background_identifier_missing"
+    failures=$((failures + 1))
+fi
+
+app_source="$repository_root/iosApp/Ratatoskr/App/RatatoskrApp.swift"
+model_source="$repository_root/iosApp/Ratatoskr/App/IosAppModel.swift"
+if ! grep -Fq -- '.onContinueUserActivity(NSUserActivityTypeBrowsingWeb)' "$app_source" ||
+    ! grep -Fq -- 'continueBrowsingUserActivity' "$model_source"; then
+    echo "not ok - browsing_user_activity_forwarding_missing"
     failures=$((failures + 1))
 fi
 

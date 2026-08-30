@@ -34,6 +34,9 @@
 		100000000000000000000091 /* ShareExtensionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* ShareExtensionParser.swift */; };
 		100000000000000000000092 /* IosShareSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000093 /* IosShareSmokeTests.swift */; };
 		100000000000000000000094 /* IosLibraryRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000095 /* IosLibraryRoutingTests.swift */; };
+		100000000000000000000096 /* IosNotificationPermissionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000098 /* IosNotificationPermissionAdapter.swift */; };
+		100000000000000000000097 /* IosNotificationPermissionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000098 /* IosNotificationPermissionAdapter.swift */; };
+		10000000000000000000009A /* IosNotificationPermissionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000099 /* IosNotificationPermissionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +64,8 @@
 		100000000000000000000090 /* IosSubmissionStatusFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosSubmissionStatusFlowTests.swift; sourceTree = "<group>"; };
 		100000000000000000000093 /* IosShareSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosShareSmokeTests.swift; sourceTree = "<group>"; };
 		100000000000000000000095 /* IosLibraryRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosLibraryRoutingTests.swift; sourceTree = "<group>"; };
+		100000000000000000000098 /* IosNotificationPermissionAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosNotificationPermissionAdapter.swift; sourceTree = "<group>"; };
+		100000000000000000000099 /* IosNotificationPermissionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosNotificationPermissionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -187,6 +192,7 @@
 				100000000000000000000086 /* IosAppModel.swift */,
 				100000000000000000000088 /* IosSubmissionScheduler.swift */,
 				10000000000000000000008D /* IosSubmissionStatusFlow.swift */,
+				100000000000000000000098 /* IosNotificationPermissionAdapter.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -200,6 +206,7 @@
 				100000000000000000000090 /* IosSubmissionStatusFlowTests.swift */,
 				100000000000000000000093 /* IosShareSmokeTests.swift */,
 				100000000000000000000095 /* IosLibraryRoutingTests.swift */,
+				100000000000000000000099 /* IosNotificationPermissionTests.swift */,
 				100000000000000000000015 /* RatatoskrTestHostApp.swift */,
 			);
 			path = RatatoskrTests;
@@ -448,6 +455,7 @@
 				100000000000000000000085 /* IosAppModel.swift in Sources */,
 				100000000000000000000087 /* IosSubmissionScheduler.swift in Sources */,
 				10000000000000000000008C /* IosSubmissionStatusFlow.swift in Sources */,
+				100000000000000000000096 /* IosNotificationPermissionAdapter.swift in Sources */,
 				10000000000000000000000E /* ShareEnvelope.swift in Sources */,
 				10000000000000000000000F /* AppGroupInbox.swift in Sources */,
 			);
@@ -468,6 +476,8 @@
 				100000000000000000000091 /* ShareExtensionParser.swift in Sources */,
 				100000000000000000000092 /* IosShareSmokeTests.swift in Sources */,
 				100000000000000000000094 /* IosLibraryRoutingTests.swift in Sources */,
+				100000000000000000000097 /* IosNotificationPermissionAdapter.swift in Sources */,
+				10000000000000000000009A /* IosNotificationPermissionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -572,6 +582,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RATATOSKR_LINK_HOST = links.ratatoskr.test;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -599,6 +610,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ratatoskr.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				RATATOSKR_LINK_HOST = links.ratatoskr.test;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";

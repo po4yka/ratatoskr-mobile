@@ -20,6 +20,64 @@ import kotlin.test.assertIs
 
 class PlatformLibraryApiTest {
     @Test
+    fun search_sends_trimmed_query_and_exact_page_bounds() =
+        runTest {
+            var request: HttpRequestData? = null
+
+            val result =
+                api(HttpStatusCode.OK, SEARCH_PAGE) { request = it }
+                    .search(AUTHORIZATION, "  durable queue  ", limit = 2, offset = 4)
+
+            val page = assertIs<PlatformLibraryResult.Success<LibraryPage>>(result).value
+            assertEquals(listOf(ANALYSIS_2, ANALYSIS_1), page.items.map { it.analysisId })
+            assertEquals(
+                "https://platform.example.test/v1/library/search?q=durable+queue&limit=2&offset=4",
+                request?.url.toString(),
+            )
+            assertEquals("Bearer access-token", request?.headers?.get(HttpHeaders.Authorization))
+            assertEquals(HttpMethod.Get, request?.method)
+        }
+
+    @Test
+    fun search_rejects_blank_oversized_or_invalid_page_without_request() =
+        runTest {
+            var requests = 0
+            val api = api(HttpStatusCode.OK, SEARCH_PAGE) { requests += 1 }
+
+            assertEquals(
+                PlatformLibraryResult.Unavailable(retryable = false),
+                api.search(AUTHORIZATION, " \n "),
+            )
+            assertEquals(
+                PlatformLibraryResult.Unavailable(retryable = false),
+                api.search(AUTHORIZATION, "x".repeat(513)),
+            )
+            assertEquals(
+                PlatformLibraryResult.Unavailable(retryable = false),
+                api.search(AUTHORIZATION, "valid", limit = 0),
+            )
+            assertEquals(
+                PlatformLibraryResult.Unavailable(retryable = false),
+                api.search(AUTHORIZATION, "valid", offset = -1),
+            )
+            assertEquals(0, requests)
+        }
+
+    @Test
+    fun search_preserves_ranked_generated_page() =
+        runTest {
+            val result = api(HttpStatusCode.OK, SEARCH_PAGE).search(AUTHORIZATION, "durable", limit = 2, offset = 4)
+
+            val page = assertIs<PlatformLibraryResult.Success<LibraryPage>>(result).value
+            assertEquals(listOf("Second match", "First match"), page.items.map { it.title })
+            assertEquals(listOf("queue recovery", "durable state"), page.items.map { it.snippet })
+            assertEquals(listOf(0.91f, 0.73f), page.items.map { it.score })
+            assertEquals(2, page.limit)
+            assertEquals(4, page.offset)
+            assertEquals(true, page.hasMore)
+        }
+
+    @Test
     fun blank_query_uses_bounded_library_path() =
         runTest {
             var request: HttpRequestData? = null
@@ -101,5 +159,7 @@ class PlatformLibraryApiTest {
         val AUTHORIZATION = Authorization("https://platform.example.test", "access-token")
         const val PAGE =
             """{"items":[{"analysis_id":"$ANALYSIS_2","document_id":"00000000-0000-4000-8000-000000000012","title":"Second","read_state":"unread"},{"analysis_id":"$ANALYSIS_1","document_id":"00000000-0000-4000-8000-000000000011","title":"First","read_state":"read"}],"limit":25,"offset":0,"has_more":false}"""
+        const val SEARCH_PAGE =
+            """{"items":[{"analysis_id":"$ANALYSIS_2","document_id":"00000000-0000-4000-8000-000000000012","title":"Second match","read_state":"unread","snippet":"queue recovery","score":0.91},{"analysis_id":"$ANALYSIS_1","document_id":"00000000-0000-4000-8000-000000000011","title":"First match","read_state":"read","snippet":"durable state","score":0.73}],"limit":2,"offset":4,"has_more":true}"""
     }
 }

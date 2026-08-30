@@ -21,5 +21,7 @@ fun MainViewController(controller: IosApplicationController): UIViewController =
             github = controller.github,
             initialContentRoute = libraryRoute,
             localStorageStore = controller.localStorageStore,
+            notificationStore = controller.notificationStore,
+            locale = controller.locale,
         )
     }

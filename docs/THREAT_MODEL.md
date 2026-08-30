@@ -26,10 +26,13 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
   Ktor clients.
 - **Revoked authorization:** refusal of both refresh and device-root recovery clears local
   credentials and current-session capabilities before exposing re-pairing.
-- **Deep-link spoof/replay:** the current custom scheme accepts only exact lowercase
-  `ratatoskr://library/{analyses|social|ai-archives}/...` shapes with canonical UUIDs; it rejects
-  user-info, query, fragment, percent encoding, traversal, unknown providers, and extra segments.
-  Links carry opaque IDs only, and live content still requires authenticated owner-scoped reads.
+- **Deep-link spoof/replay:** custom routes accept only exact lowercase
+  `ratatoskr://library/{analyses|social|ai-archives}/...` shapes, while HTTPS routes accept only the
+  configured ASCII-lowercase host and exact analysis/collection/repository paths. The parser rejects
+  foreign hosts, ports, user-info, query, fragment, percent encoding, traversal, noncanonical IDs,
+  and extra segments. Links carry opaque identifiers only, and live content still requires
+  authenticated owner-scoped reads. Manifest/entitlement tests do not claim deployed association
+  files, DNS, or TLS ownership.
 - **Untrusted reader content:** render contract-fixed blocks, provenance, warnings, notes, and
   titles only through inert Compose text primitives; do not use WebView/HTML execution or infer
   provider Saved authority.
@@ -61,6 +64,19 @@ Private shared URLs/text/files, staged copies, device credentials, local notes/c
 - **Private lock-screen disclosure:** Android notifications use generic outcome text and an opaque
   operation UUID only; URLs, titles, notes, tokens, and server result bodies never enter the
   notification, PendingIntent, WorkManager input, or diagnostic labels.
+- **Notification permission or token overreach:** model Platform subscribe availability separately
+  from OS permission; the current missing contract remains `IntegrationPending` and performs no
+  prompt, APNs/FCM registration, token storage, or guessed request. Revocation removes local policy
+  state and cancels pending/delivered native notifications.
+- **Search/query and crash-log disclosure:** a closed diagnostics boundary accepts only event and
+  outcome enums. A source mutation gate rejects direct Android/Swift/Kotlin logging, crash or
+  breadcrumb metadata, raw throwables, direct Kermit use, and diagnostic content fields in
+  production source. Search queries, link values, user identifiers, and server errors never enter
+  diagnostic records.
+- **Inaccessible or misleading state:** shared heading/status/input/action primitives expose roles,
+  names, live state descriptions, traversal order, 48 dp targets, tested contrast, and EN/RU labels.
+  Automated emulator/simulator checks do not replace physical-device TalkBack/VoiceOver and visual
+  release review.
 - **Supply-chain/release compromise:** pinned dependencies, signing, provenance, store/release verification.
 
 Re-review for biometric gates, media preview/rendering, local search embeddings, widgets, cross-device sync, or additional share file types.

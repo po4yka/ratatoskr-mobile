@@ -35,6 +35,12 @@ sealed interface LibraryRepositoryResult<out T> {
 interface LibraryRepository {
     suspend fun recent(): LibraryRepositoryResult<LibraryPage>
 
+    suspend fun search(
+        query: String,
+        limit: Int = 25,
+        offset: Int = 0,
+    ): LibraryRepositoryResult<LibraryPage> = LibraryRepositoryResult.Unavailable(retryable = false)
+
     suspend fun replaceReadState(
         analysisId: String,
         readState: ReadState,
@@ -46,6 +52,12 @@ class AuthorizedLibraryRepository(
     private val authorizedRequests: AuthorizedRequestExecutor,
 ) : LibraryRepository {
     override suspend fun recent(): LibraryRepositoryResult<LibraryPage> = execute { authorization -> api.recent(authorization) }
+
+    override suspend fun search(
+        query: String,
+        limit: Int,
+        offset: Int,
+    ): LibraryRepositoryResult<LibraryPage> = execute { authorization -> api.search(authorization, query, limit, offset) }
 
     override suspend fun replaceReadState(
         analysisId: String,
@@ -95,6 +107,7 @@ data class LibraryItemPresentation(
     val title: String,
     val readState: ReadState,
     val snippet: String?,
+    val score: Float? = null,
     val authority: ContentAuthority = ContentAuthority.LivePlatform,
 )
 

@@ -8,10 +8,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.ratatoskr.mobile.diagnostics.MobileDiagnosticEvent
+import com.ratatoskr.mobile.diagnostics.MobileDiagnosticOutcome
+import com.ratatoskr.mobile.diagnostics.MobileDiagnostics
+import com.ratatoskr.mobile.library.ContentLinkConfiguration
 import com.ratatoskr.mobile.library.ContentRouteResult
 import com.ratatoskr.mobile.library.ContentRouteTable
 import com.ratatoskr.mobile.library.routeIdOrNull
 import com.ratatoskr.mobile.operation.OperationListStore
+import com.ratatoskr.mobile.presentation.MobileLocale
 import com.ratatoskr.mobile.share.AndroidFileIntakeResult
 import com.ratatoskr.mobile.share.AndroidShareIntentParser
 import com.ratatoskr.mobile.share.AndroidStagingFailure
@@ -29,7 +34,11 @@ import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     private val shareParser = AndroidShareIntentParser()
+    private val diagnostics = MobileDiagnostics()
     private val container by lazy { (application as RatatoskrApplication).container }
+    private val linkConfiguration by lazy {
+        ContentLinkConfiguration(setOf(BuildConfig.RATATOSKR_LINK_HOST))
+    }
     private var shareStore by mutableStateOf<ShareStagingStore?>(null)
     private lateinit var operationListStore: OperationListStore
     private var activeDetailStore: com.ratatoskr.mobile.operation.OperationDetailStore? = null
@@ -62,6 +71,13 @@ class MainActivity : ComponentActivity() {
                 github = container.github,
                 initialContentRoute = pendingContentRoute,
                 localStorageStore = container.localStorageStore,
+                notificationStore = container.notificationStore,
+                locale =
+                    if (resources.configuration.locales[0].language == "ru") {
+                        MobileLocale.Russian
+                    } else {
+                        MobileLocale.English
+                    },
             )
         }
     }
@@ -172,8 +188,12 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun acceptLibraryLink(value: String): Boolean {
-        val parsed = ContentRouteTable.parse(value)
-        if (parsed !is ContentRouteResult.Accepted) return false
+        val parsed = ContentRouteTable.parse(value, linkConfiguration)
+        if (parsed !is ContentRouteResult.Accepted) {
+            diagnostics.record(MobileDiagnosticEvent.LinkRejected, MobileDiagnosticOutcome.Rejected)
+            return false
+        }
+        diagnostics.record(MobileDiagnosticEvent.LinkAccepted, MobileDiagnosticOutcome.Succeeded)
         pendingShareIntake = null
         pendingOperationId = null
         pendingContentRoute = parsed

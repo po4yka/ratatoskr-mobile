@@ -98,7 +98,34 @@ API 35 `LibraryUiTest` instrumentation checks shared Compose list/read state, fi
 mutations, inert hostile text, and loading/empty/offline/reauth/integration-pending states.
 `LibraryDeepLinkIntentTest` and hosted `IosLibraryRoutingTests` check cold/warm native handoff and
 that invalid external links preserve the current destination. All content is synthetic. This is
-not live Platform full-content/curation, universal-link, provider, or physical-device evidence.
+not live Platform full-content/curation, deployed link association, provider, or physical-device
+evidence.
+
+## Search, links, notifications, accessibility, and privacy gate
+
+Common tests cover exact generated `GET /v1/library/search` transport, bounded queries/pages,
+rank-preserving pagination, generation/offset fencing, offline retry, re-pairing, notification
+availability and one-shot permission policy, EN/RU catalog completeness, WCAG palette ratios, and
+closed content-free diagnostic records.
+
+Android instrumentation runs `LibrarySearchUiTest`, `AndroidAppLinkIntentTest`,
+`AccessibilityUiTest`, the expanded `CaptureStatusNotificationTest`, and
+`AndroidShareSmokeTest.shell_wires_search_https_routes_notification_truth_russian_and_accessible_navigation`.
+Local focused evidence uses a dedicated API 36 emulator; hosted CI uses its declared API 35 image.
+The suites verify semantics, live-region state, logical order, 48 dp targets, 2x font scale,
+fail-closed raw-link routing, explicit permission policy, and private-canary absence.
+
+Hosted iOS XCTest runs `IosNotificationPermissionTests`, configured Universal Link routing in
+`IosLibraryRoutingTests`, and
+`IosShareSmokeTests.testShellWiresUniversalLinksNotificationTruthRussianAndPrivateCanaryAbsence`.
+Local focused evidence uses a dedicated iOS 26.5 simulator. `app_link_shell_test.sh`,
+`ios_share_entitlements_test.sh`, and `privacy_source_gate_test.sh` verify manifest/entitlement
+parity and reject eight classes of injected production logging/privacy violations.
+
+These are generated-contract, fixture, emulator, simulator, and shell-configuration proofs. They
+do not prove a live Knowledge/Platform deployment, deployed `assetlinks.json` or AASA, DNS/TLS host
+control, APNs/FCM subscription or delivery, a physical-device accessibility pass, release signing,
+or store publication.
 
 ## GitHub catalog and action gate
 

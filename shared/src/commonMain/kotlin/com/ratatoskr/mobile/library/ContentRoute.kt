@@ -7,12 +7,30 @@ import kotlinx.serialization.Serializable
 data object LibraryListRoute : NavKey
 
 @Serializable
+data object LibrarySearchRoute : NavKey
+
+@Serializable
 data object FixtureLibraryRoute : NavKey
 
 @Serializable
 data class ArticleReaderRoute(
     val analysisId: String,
 ) : NavKey
+
+@Serializable
+data class CollectionRoute(
+    val collectionId: String,
+) : NavKey
+
+@Serializable
+data class RepositoryRoute(
+    val owner: String,
+    val repository: String,
+) : NavKey
+
+data class ContentLinkConfiguration(
+    val httpsHosts: Set<String> = emptySet(),
+)
 
 @Serializable
 enum class SocialReaderProvider {
@@ -52,6 +70,8 @@ fun ContentRouteResult.routeIdOrNull(): String? =
         is ContentRouteResult.Accepted ->
             when (val destination = route) {
                 is ArticleReaderRoute -> destination.analysisId
+                is CollectionRoute -> destination.collectionId
+                is RepositoryRoute -> "${destination.owner}/${destination.repository}"
                 is SocialReaderRoute -> destination.sourceId
                 is AiArchiveReaderRoute -> destination.itemId
                 else -> null
@@ -86,7 +106,10 @@ fun FixtureLibraryItem.readerRoute(): NavKey =
     }
 
 object ContentRouteTable {
-    fun parse(value: String): ContentRouteResult {
+    fun parse(
+        value: String,
+        configuration: ContentLinkConfiguration = ContentLinkConfiguration(),
+    ): ContentRouteResult {
         ARTICLE.matchEntire(value)?.let { match ->
             return ContentRouteResult.Accepted(ArticleReaderRoute(match.groupValues[1]))
         }
@@ -109,11 +132,29 @@ object ContentRouteTable {
                 }
             return ContentRouteResult.Accepted(AiArchiveReaderRoute(provider, match.groupValues[2]))
         }
+        configuration.httpsHosts
+            .asSequence()
+            .filter(HOST::matches)
+            .forEach { host ->
+                Regex("^https://${Regex.escape(host)}/analyses/$CANONICAL_UUID$")
+                    .matchEntire(value)
+                    ?.let { return ContentRouteResult.Accepted(ArticleReaderRoute(it.groupValues[1])) }
+                Regex("^https://${Regex.escape(host)}/collections/($COLLECTION_SLUG)$")
+                    .matchEntire(value)
+                    ?.let { return ContentRouteResult.Accepted(CollectionRoute(it.groupValues[1])) }
+                Regex("^https://${Regex.escape(host)}/repos/($REPOSITORY_OWNER)/($REPOSITORY_NAME)$")
+                    .matchEntire(value)
+                    ?.let { return ContentRouteResult.Accepted(RepositoryRoute(it.groupValues[1], it.groupValues[2])) }
+            }
         return ContentRouteResult.Invalid
     }
 
     private const val CANONICAL_UUID =
         "([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})"
+    private const val COLLECTION_SLUG = "[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?"
+    private const val REPOSITORY_OWNER = "[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?"
+    private const val REPOSITORY_NAME = "[a-z0-9](?:[a-z0-9._-]{0,98}[a-z0-9])?"
+    private val HOST = Regex("^[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?$")
     private val ARTICLE = Regex("^ratatoskr://library/analyses/$CANONICAL_UUID$")
     private val SOCIAL = Regex("^ratatoskr://library/social/(x|instagram|threads)/$CANONICAL_UUID$")
     private val AI_ARCHIVE = Regex("^ratatoskr://library/ai-archives/(chatgpt|claude)/$CANONICAL_UUID$")

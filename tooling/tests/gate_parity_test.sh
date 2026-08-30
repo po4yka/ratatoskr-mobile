@@ -39,6 +39,8 @@ required_commands=(
     './tooling/contracts/check.sh'
     './tooling/tests/contract_drift_test.sh'
     './tooling/tests/platform_library_contract_test.sh'
+    './tooling/tests/app_link_shell_test.sh'
+    './tooling/tests/privacy_source_gate_test.sh'
     ':androidApp:assembleDebug'
     ':shared:connectedDebugAndroidTest'
     'swift format lint --recursive --strict iosApp'
@@ -96,6 +98,11 @@ library_gate_markers=(
     'FixtureUserContentRepositoryTest'
     'LibraryReaderStoreTest'
     'ContentRouteTableTest'
+    'LibrarySearchStoreTest'
+    'CompletionNotificationStoreTest'
+    'MobileStringsTest'
+    'AccessiblePaletteTest'
+    'MobileDiagnosticsTest'
 )
 
 for marker in "${library_gate_markers[@]}"; do
@@ -140,6 +147,31 @@ for marker in "${file_lifecycle_gate_markers[@]}"; do
     assert_in_file "$workflow" "$marker" "ci_runs_file_transfer_retention_and_erasure"
 done
 
+item_nine_android_gate_markers=(
+    'AndroidAppLinkIntentTest'
+    'LibrarySearchUiTest'
+    'AccessibilityUiTest'
+    'shell_wires_search_https_routes_notification_truth_russian_and_accessible_navigation'
+)
+
+for marker in "${item_nine_android_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_android_search_links_notifications_and_accessibility"
+    assert_in_file "$workflow" "$marker" "ci_runs_android_search_links_notifications_and_accessibility"
+done
+
+item_nine_ios_gate_markers=(
+    'IosNotificationPermissionTests'
+    'testConfiguredUniversalLinksForwardRawAndResolveCanonicalDestinations'
+    'testForeignOrAmbiguousUniversalLinksAreRejected'
+    'testBrowsingUserActivityUsesTheSharedRouteTable'
+    'testShellWiresUniversalLinksNotificationTruthRussianAndPrivateCanaryAbsence'
+)
+
+for marker in "${item_nine_ios_gate_markers[@]}"; do
+    assert_in_file "$development" "$marker" "ci_runs_ios_links_notifications_accessibility_and_privacy"
+    assert_in_file "$workflow" "$marker" "ci_runs_ios_links_notifications_accessibility_and_privacy"
+done
+
 if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_shared_tests"
     echo "ok - documented_gate_matches_ci"
@@ -149,6 +181,8 @@ if [[ "$failures" -eq 0 ]]; then
     echo "ok - ci_runs_library_contract_and_state_tests"
     echo "ok - ci_runs_github_contract_state_and_surface_tests"
     echo "ok - ci_runs_file_transfer_retention_and_erasure"
+    echo "ok - ci_runs_android_search_links_notifications_and_accessibility"
+    echo "ok - ci_runs_ios_links_notifications_accessibility_and_privacy"
 fi
 
 exit "$failures"

@@ -35,6 +35,8 @@
   <string>$(CURRENT_PROJECT_VERSION)</string>
   <key>RatatoskrKeychainAccessGroup</key>
   <string>$(AppIdentifierPrefix)com.ratatoskr.mobile.shared</string>
+  <key>RatatoskrLinkHost</key>
+  <string>$(RATATOSKR_LINK_HOST)</string>
   <key>UIApplicationSupportsIndirectInputEvents</key>
   <true/>
   <key>UILaunchScreen</key>

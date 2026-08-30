@@ -46,6 +46,8 @@ underlying commands directly.
 ./tooling/tests/platform_library_contract_test.sh
 ./tooling/tests/github_contract_fixture_test.sh
 ./tooling/tests/blob_transfer_contract_drift_test.sh
+./tooling/tests/app_link_shell_test.sh
+./tooling/tests/privacy_source_gate_test.sh
 
 build-gate -- ./gradlew --no-daemon ktlintCheck
 build-gate -- ./tooling/contracts/check.sh
@@ -78,7 +80,10 @@ XCTest is the runtime gate.
 
 Android app instrumentation covers `AndroidShareIntentParserTest`, `ShareStagingUiTest`,
 `CaptureSubmissionWorkerTest`, `OperationStatusUiTest`, `CaptureStatusNotificationTest`, and the
-end-to-end `AndroidShareSmokeTest`, plus `LibraryDeepLinkIntentTest` and `LibraryUiTest`. The smoke uses only synthetic data and a deterministic
+end-to-end `AndroidShareSmokeTest`, plus `LibraryDeepLinkIntentTest`, `AndroidAppLinkIntentTest`,
+`LibraryUiTest`, `LibrarySearchUiTest`, and `AccessibilityUiTest`. The item-9 smoke method is
+`shell_wires_search_https_routes_notification_truth_russian_and_accessible_navigation`. The smoke
+uses only synthetic data and a deterministic
 operation fixture on an API 35 emulator; it proves activity/database reopen and UI wiring, not a
 live Platform deployment or physical device. Hosted CI retains the report as the
 `android-share-test-reports` artifact.
@@ -116,6 +121,11 @@ render a terminal fixture status. CI retains its content-free result as `ios-sha
 The smoke is simulator/fixture proof, not live Platform, guaranteed BackgroundTasks delivery,
 physical-device extension budget, provider, release-signing, file-upload, or App Store proof.
 `IosLibraryRoutingTests` proves cold/warm custom-scheme handoff and fail-closed invalid-link handling.
+It also runs `testConfiguredUniversalLinksForwardRawAndResolveCanonicalDestinations`,
+`testForeignOrAmbiguousUniversalLinksAreRejected`, and
+`testBrowsingUserActivityUsesTheSharedRouteTable`. `IosNotificationPermissionTests` proves the
+integration-pending, explicit available, denied, and revoke paths. The shell-level item-9 case is
+`testShellWiresUniversalLinksNotificationTruthRussianAndPrivateCanaryAbsence`.
 
 ## Library and content-routing gate
 
@@ -126,6 +136,12 @@ note, collection/tag membership, provenance, warnings, social authority, and AI 
 completeness without Platform calls. `ContentRouteTableTest` accepts only the documented
 lowercase canonical UUID routes and rejects query, fragment, credentials, encoding ambiguity,
 traversal, unknown providers, and extra segments.
+
+`LibrarySearchStoreTest` covers ranked pagination, request fencing, validation, offline retry, and
+repairing state. `CompletionNotificationStoreTest` covers truthful contract availability and
+one-shot permission policy. `MobileStringsTest`, `AccessiblePaletteTest`, and
+`MobileDiagnosticsTest` cover EN/RU state parity, WCAG contrast, and the content-free diagnostic
+type boundary.
 
 ## Capture queue gate
 

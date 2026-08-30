@@ -43,7 +43,13 @@
    bounded retention/usage, WorkManager/BGProcessing constraints, and marker-last revoke/clear-data.
    Production delivery remains `IntegrationPending` until Platform publishes a pinned receipt
    binding; emulator/simulator fixtures are not live Platform or physical-device proof.
-9. Add library/search/deep links/notifications, accessibility and privacy polish.
+9. **Complete locally (2026-08-30):** add generated-contract ranked library search, exact
+   build-configured Android App Link/iOS Universal Link routing, truthful completion-notification
+   availability and native permission policy, EN/RU labels, shared accessible primitives, and a
+   mutation-tested content-free diagnostic boundary. Evidence covers common tests, dedicated API
+   36 emulator and iOS 26.5 simulator shell/UI suites, manifest/entitlement checks, and unsigned
+   builds; it is not live Knowledge/Platform, deployed association files/DNS/TLS, APNs/FCM,
+   physical-device accessibility, release-signing, or store proof.
 10. Add real-device lifecycle, release signing/store profiles, and workspace integration.
 
 Definition of Done: URL/file capture survives termination/offline without duplication/data loss; credentials are protected; writes explicit; staged cleanup safe; accessibility/security/platform/workspace tests pass.

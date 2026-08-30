@@ -10,6 +10,9 @@ struct RatatoskrApp: App {
       ComposeRootView(controller: model.controller)
         .ignoresSafeArea()
         .onOpenURL { model.openLibraryURL($0) }
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) {
+          model.continueBrowsingUserActivity($0)
+        }
     }
     .onChange(of: scenePhase, initial: true) { _, phase in
       model.setSceneActive(phase == .active)

@@ -3,6 +3,50 @@ import Shared
 import XCTest
 
 final class IosLibraryRoutingTests: XCTestCase {
+  func testConfiguredUniversalLinksForwardRawAndResolveCanonicalDestinations() throws {
+    let fixture = try makeController()
+    defer { fixture.controller.close() }
+    fixture.controller.configureContentLinkHost(host: Self.linkHost)
+
+    let links = [
+      ("https://\(Self.linkHost)/analyses/\(Self.id)", Self.id),
+      ("https://\(Self.linkHost)/collections/inbox", "inbox"),
+      ("https://\(Self.linkHost)/repos/ratatoskr/mobile", "ratatoskr/mobile"),
+    ]
+    for (raw, expected) in links {
+      XCTAssertTrue(fixture.controller.acceptLibraryLink(value: raw), raw)
+      XCTAssertEqual(fixture.controller.pendingLibraryRouteId(), expected, raw)
+    }
+  }
+
+  func testForeignOrAmbiguousUniversalLinksAreRejected() throws {
+    let fixture = try makeController()
+    defer { fixture.controller.close() }
+    fixture.controller.configureContentLinkHost(host: Self.linkHost)
+
+    let invalid = [
+      "https://foreign.ratatoskr.test/analyses/\(Self.id)",
+      "https://\(Self.linkHost):443/analyses/\(Self.id)",
+      "https://\(Self.linkHost)/analyses/\(Self.id)?source=private-canary",
+      "HTTPS://\(Self.linkHost)/analyses/\(Self.id)",
+    ]
+    for raw in invalid {
+      XCTAssertFalse(fixture.controller.acceptLibraryLink(value: raw), raw)
+    }
+  }
+
+  func testBrowsingUserActivityUsesTheSharedRouteTable() throws {
+    let fixture = try makeController()
+    defer { fixture.controller.close() }
+    fixture.controller.configureContentLinkHost(host: Self.linkHost)
+
+    let activity = NSUserActivity(activityType: NSUserActivityTypeBrowsingWeb)
+    activity.webpageURL = URL(string: "https://\(Self.linkHost)/analyses/\(Self.id)")
+    let raw = try XCTUnwrap(activity.webpageURL?.absoluteString)
+    XCTAssertTrue(fixture.controller.acceptLibraryLink(value: raw))
+    XCTAssertEqual(fixture.controller.pendingLibraryRouteId(), Self.id)
+  }
+
   func testColdAndWarmLinksSelectTheSameSharedDestination() throws {
     let fixture = try makeController()
     defer { fixture.controller.close() }
@@ -43,6 +87,7 @@ final class IosLibraryRoutingTests: XCTestCase {
   }
 
   private static let id = "abcdef01-0000-4000-8000-000000000001"
+  private static let linkHost = "links.ratatoskr.test"
 }
 
 final class IosLocalStorageSurfaceSmokeTests: XCTestCase {
