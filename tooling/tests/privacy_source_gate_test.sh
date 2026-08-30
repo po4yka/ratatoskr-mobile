@@ -23,19 +23,19 @@ scan_sources() {
     )
     [[ "${#files[@]}" -gt 0 ]] || return 0
 
-    if rg -n --no-heading \
-        '(android\.util\.Log|(^|[^[:alnum:]_])(Log\.[vdiewtf]|println|print|NSLog)\s*\(|Crashlytics|SentrySDK|recordException\s*\(|addBreadcrumb\s*\(|setUserID\s*\(|setCustomValue\s*\()' \
+    if grep -En \
+        '(android\.util\.Log|(^|[^[:alnum:]_])(Log\.[vdiewtf]|println|print|NSLog)[[:space:]]*\(|Crashlytics|SentrySDK|recordException[[:space:]]*\(|addBreadcrumb[[:space:]]*\(|setUserID[[:space:]]*\(|setCustomValue[[:space:]]*\()' \
         "${files[@]}" >/dev/null; then
         return 1
     fi
 
     local file
     for file in "${files[@]}"; do
-        if [[ "$file" != */diagnostics/MobileDiagnostics.kt ]] && rg -q 'Logger\.' "$file"; then
+        if [[ "$file" != */diagnostics/MobileDiagnostics.kt ]] && grep -Eq 'Logger\.' "$file"; then
             return 1
         fi
         if [[ "$file" == */diagnostics/MobileDiagnostics.kt ]] &&
-            rg -q 'MobileDiagnosticRecord[^\n]*(String|Throwable|Exception|Map|Any|ByteArray)' "$file"; then
+            grep -Eq 'MobileDiagnosticRecord.*(String|Throwable|Exception|Map|Any|ByteArray)' "$file"; then
             return 1
         fi
     done
