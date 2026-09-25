@@ -15,11 +15,14 @@ import kotlin.test.assertIs
 import kotlin.time.Instant
 
 class ResumableUploadCoordinatorTest {
+    // The fixture checkpoint expires at 2026-09-01; a wall clock would expire it and reopen the session.
+    private val fixedNow = { Instant.parse("2026-08-30T00:00:00Z") }
+
     @Test
     fun resume_after_interruption_sends_only_receiver_missing_chunks() =
         runTest {
             val transport = RecordingTransport(received = setOf(0))
-            val coordinator = ResumableUploadCoordinator(transport)
+            val coordinator = ResumableUploadCoordinator(transport, now = fixedNow)
 
             coordinator.resume("capture-1", "idem-1", declaration(), BytesSource(), checkpoint())
 
@@ -33,7 +36,7 @@ class ResumableUploadCoordinatorTest {
             val stale = checkpoint().copy(receivedChunks = setOf(0))
 
             val result =
-                ResumableUploadCoordinator(transport)
+                ResumableUploadCoordinator(transport, now = fixedNow)
                     .resume("capture-1", "idem-1", declaration(), BytesSource(), stale)
 
             assertEquals(emptyList(), transport.sentIndices)
@@ -51,6 +54,7 @@ class ResumableUploadCoordinatorTest {
                         persisted += it
                         TransferResult.Success(Unit)
                     },
+                    now = fixedNow,
                 )
 
             coordinator.resume("capture-1", "idem-1", declaration(), BytesSource(), checkpoint())
@@ -62,7 +66,7 @@ class ResumableUploadCoordinatorTest {
     fun uncertain_finalize_reconciles_without_new_session() =
         runTest {
             val transport = RecordingTransport(received = setOf(0, 1), finalizeFailsOnce = true)
-            val coordinator = ResumableUploadCoordinator(transport, now = { Instant.parse("2026-08-30T00:00:00Z") })
+            val coordinator = ResumableUploadCoordinator(transport, now = fixedNow)
 
             assertIs<UploadAttemptResult.Failed>(
                 coordinator.resume("capture-1", "idem-1", declaration(), BytesSource(), checkpoint()),
@@ -80,7 +84,7 @@ class ResumableUploadCoordinatorTest {
             val expired = checkpoint().copy(expiresAt = Instant.parse("2026-08-29T00:00:00Z"))
 
             val result =
-                ResumableUploadCoordinator(transport, now = { Instant.parse("2026-08-30T00:00:00Z") })
+                ResumableUploadCoordinator(transport, now = fixedNow)
                     .resume("capture-1", "idem-1", declaration(), BytesSource(), expired)
 
             assertEquals(1, transport.openCount)
@@ -93,7 +97,7 @@ class ResumableUploadCoordinatorTest {
             val transport = RecordingTransport(received = setOf(0), statusFailsOnce = TransferFailure.SessionExpired)
 
             val result =
-                ResumableUploadCoordinator(transport, now = { Instant.parse("2026-08-30T00:00:00Z") })
+                ResumableUploadCoordinator(transport, now = fixedNow)
                     .resume("capture-1", "idem-1", declaration(), BytesSource(), checkpoint())
 
             assertEquals(1, transport.openCount)
@@ -106,7 +110,7 @@ class ResumableUploadCoordinatorTest {
             val changed = BytesSource(metadataDigest = "2".repeat(64))
 
             val result =
-                ResumableUploadCoordinator(RecordingTransport(received = emptySet()))
+                ResumableUploadCoordinator(RecordingTransport(received = emptySet()), now = fixedNow)
                     .resume("capture-1", "idem-1", declaration(), changed, checkpoint())
 
             assertEquals(TransferFailure.Integrity, assertIs<UploadAttemptResult.Failed>(result).failure)
@@ -116,7 +120,7 @@ class ResumableUploadCoordinatorTest {
     fun receipt_does_not_complete_platform_operation() =
         runTest {
             val result =
-                ResumableUploadCoordinator(RecordingTransport(received = setOf(0, 1)))
+                ResumableUploadCoordinator(RecordingTransport(received = setOf(0, 1)), now = fixedNow)
                     .resume("capture-1", "idem-1", declaration(), BytesSource(), checkpoint())
 
             assertFalse(assertIs<UploadAttemptResult.Uploaded>(result).platformAccepted)
