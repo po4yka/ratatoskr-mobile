@@ -110,7 +110,10 @@ final class IosShareSmokeTests: XCTestCase {
     let handoffID = UUID()
     _ = try AppGroupEnvelopeStore(
       rootURL: root.appendingPathComponent("ShareInbox", isDirectory: true)
-    ).publish(ShareEnvelope(id: handoffID, capturedAt: Date(), file: descriptor))
+    ).publish(
+      ShareEnvelope(
+        id: handoffID, capturedAt: Date(timeIntervalSince1970: 1_788_000_000), file: descriptor)
+    )
 
     let inbox = AppGroupInbox(containerURL: root)
     let possibleClaim = try await inbox.claimNext()
