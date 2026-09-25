@@ -70,10 +70,7 @@ class ResumableUploadCoordinator(
     private val checkpointSink: suspend (UploadCheckpoint) -> TransferResult<Unit> = {
         TransferResult.Success(Unit)
     },
-    private val now: () -> Instant = {
-        kotlin.time.Clock.System
-            .now()
-    },
+    private val now: () -> Instant,
 ) {
     suspend fun resume(
         captureLocalId: String,

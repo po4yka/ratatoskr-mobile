@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Weekly on main, so a date-dependent test or a runner change is caught without a push.
+    - cron: "37 5 * * 1"
 
 permissions:
   contents: read

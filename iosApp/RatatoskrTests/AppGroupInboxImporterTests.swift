@@ -163,7 +163,10 @@ final class AppGroupInboxImporterTests: XCTestCase {
       artifactID: id)
     return try AppGroupEnvelopeStore(
       rootURL: containerURL.appendingPathComponent("ShareInbox", isDirectory: true)
-    ).publish(ShareEnvelope(id: id, capturedAt: Date(), file: descriptor))
+    ).publish(
+      ShareEnvelope(
+        id: id, capturedAt: Date(timeIntervalSince1970: 1_788_000_000), file: descriptor)
+    )
   }
 
   private func id(_ value: Int) -> UUID {
